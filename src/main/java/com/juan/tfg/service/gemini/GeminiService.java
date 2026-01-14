@@ -12,7 +12,7 @@ public class GeminiService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    public void probarConexion() {
+    public void probarConexion(String fen) {
         try {
             System.out.println("🤖 Iniciando petición a Gemini...");
 
@@ -23,10 +23,13 @@ public class GeminiService {
                     .apiKey(apiKey)
                     .build();
 
+            String prompt = "Analyze the following chess position and give a piece of advice without directly saying " +
+                    "which piece to move. The position in FEN format is the following: " + fen;
+
             // 3. Tu código de llamada (con el modelo corregido a 1.5)
             GenerateContentResponse response = client.models.generateContent(
-                    "gemini-2.0-flash", // "gemini-2.5" aun no existe publicamente, usa 1.5
-                    "Explain how AI works in a few words",
+                    "gemini-2.5-flash", // "gemini-2.5" aun no existe publicamente, usa 1.5
+                    prompt,
                     null
             );
 
