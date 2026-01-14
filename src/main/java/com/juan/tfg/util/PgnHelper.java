@@ -1,11 +1,7 @@
 package com.juan.tfg.util;
 
-import com.github.bhlangonijr.chesslib.Board;
-import com.github.bhlangonijr.chesslib.game.Game;
 import com.github.bhlangonijr.chesslib.move.MoveList;
-import com.github.bhlangonijr.chesslib.pgn.PgnHolder;
 
-import java.io.StringReader;
 
 public class PgnHelper {
 
@@ -14,10 +10,9 @@ public class PgnHelper {
      * Ideal para los puzzles de Lichess.
      *
      * @param pgnRaw El string con toda la partida (ej: "1. e4 e5 2. Nf3...")
-     * @param ply    El número de medio-movimiento donde quieres la foto (ej: 60)
      * @return El string FEN resultante (ej: "rnbqk...")
      */
-    public static String getFenFromPgn(String pgnRaw, int ply) {
+    public static String getFenFromPgn(String pgnRaw) {
         if (pgnRaw == null || pgnRaw.isEmpty()) {
             return null;
         }

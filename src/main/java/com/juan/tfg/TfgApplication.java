@@ -1,6 +1,5 @@
 package com.juan.tfg;
 
-import com.github.bhlangonijr.chesslib.Board;
 import com.juan.tfg.model.dto.LichessPuzzleResponse;
 import com.juan.tfg.service.gemini.GeminiService;
 import com.juan.tfg.service.lichess.LichessService;
@@ -11,7 +10,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-import java.net.http.HttpResponse;
 
 @SpringBootApplication
 public class TfgApplication {
@@ -32,7 +30,7 @@ public class TfgApplication {
 			System.out.println("⏳ Reconstruyendo partida hasta el movimiento: " + ply);
 
 			// 1. Obtenemos el objeto Board en el estado exacto del puzzle
-			String board = PgnHelper.getFenFromPgn(pgnRaw, ply);
+			String board = PgnHelper.getFenFromPgn(pgnRaw);
 
 			// 2. Usamos tu método anterior para pintarlo
 			// Nota: board.getFen() nos devuelve el String FEN que necesita tu printer antiguo
