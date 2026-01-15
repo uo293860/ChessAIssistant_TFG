@@ -1,7 +1,7 @@
 name: 🤖 Integración IA
 description: Tareas relacionadas con LLMs, Prompts o servicios de IA
-title: "[IA]: "
-labels: ["ai-integration"]
+title: "[AI]: "
+labels: ["AI"]
 body:
   - type: input
     id: model
