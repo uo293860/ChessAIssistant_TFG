@@ -1,0 +1,21 @@
+name: 📚 Documentación
+description: Actualizar el README, Wiki o comentarios de código
+title: "[DOCS]: "
+labels: ["documentation"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Tipo de documentación
+      options:
+        - README
+        - Wiki del proyecto
+        - Documentación de API (Swagger)
+        - Comentarios en código
+  - type: textarea
+    id: changes
+    attributes:
+      label: ¿Qué falta o qué está desactualizado?
+      placeholder: Explicar qué sección necesita ser escrita o corregida...
+    validations:
+      required: true

@@ -1,0 +1,36 @@
+name: 🎨 Tarea Frontend
+description: Cambios en la interfaz, componentes UI o estilos
+title: "[FE]: "
+labels: ["frontend"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción Visual
+      description: ¿Qué debe ver o hacer el usuario?
+    validations:
+      required: true
+  - type: input
+    id: mockup
+    attributes:
+      label: Enlace al diseño (Figma/Sketch)
+      placeholder: https://figma.com/...
+  - type: dropdown
+    id: device
+    attributes:
+      label: Dispositivo / Vista
+      options:
+        - Desktop
+        - Mobile
+        - Responsive (Ambos)
+        - Tablet
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Checklist de UI
+      value: |
+        - [ ] Coincide con el diseño
+        - [ ] Es responsive
+        - [ ] No tiene errores en consola

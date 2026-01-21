@@ -1,0 +1,25 @@
+name: 🚀 Deployment / DevOps
+description: Tareas de CI/CD, servidores, docker o variables de entorno
+title: "[OPS]: "
+labels: ["deployment"]
+body:
+  - type: dropdown
+    id: env
+    attributes:
+      label: Entorno Afectado
+      options:
+        - Producción
+        - Staging / Testing
+        - Desarrollo local
+  - type: textarea
+    id: infrastructure
+    attributes:
+      label: Cambios necesarios
+      placeholder: Actualizar Dockerfile, añadir variables de entorno, configurar pipeline...
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist de Seguridad
+      options:
+        - label: No se exponen keys/secretos en el código
+        - label: Las variables de entorno están documentadas

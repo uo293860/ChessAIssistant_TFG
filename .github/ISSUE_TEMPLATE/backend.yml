@@ -1,0 +1,30 @@
+name: ⚙️ Tarea Backend
+description: Crear, modificar o arreglar lógica del servidor, APIs o Base de Datos
+title: "[BE]: "
+labels: ["backend"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción Técnica
+      description: ¿Qué se debe implementar o arreglar?
+      placeholder: Describe la lógica, el endpoint o el cambio en la BBDD...
+    validations:
+      required: true
+  - type: input
+    id: endpoint
+    attributes:
+      label: Endpoint afectado (Opcional)
+      placeholder: GET /api/v1/users
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de Aceptación
+      description: ¿Qué debe pasar para considerar esta tarea terminada?
+      value: |
+        - [ ] El endpoint devuelve código 200 OK
+        - [ ] Se guardan los datos correctamente en la DB
+        - [ ] Tests unitarios pasando
+    validations:
+      required: true
+

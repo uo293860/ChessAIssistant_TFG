@@ -1,0 +1,23 @@
+name: 🤖 Integración IA
+description: Tareas relacionadas con LLMs, Prompts o servicios de IA
+title: "[AI]: "
+labels: ["AI"]
+body:
+  - type: input
+    id: model
+    attributes:
+      label: Modelo a utilizar
+      placeholder: gpt-4, claude-3, llama-3...
+  - type: textarea
+    id: prompt
+    attributes:
+      label: Prompt / Contexto
+      description: Describe el prompt del sistema o la lógica de la IA.
+      placeholder: El sistema debe actuar como un experto en...
+  - type: textarea
+    id: output
+    attributes:
+      label: Output Esperado
+      description: ¿Qué formato debe devolver la IA? (JSON, Texto, Código...)
+    validations:
+      required: true
