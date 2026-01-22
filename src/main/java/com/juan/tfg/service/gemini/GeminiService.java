@@ -23,8 +23,27 @@ public class GeminiService {
                     .apiKey(apiKey)
                     .build();
 
-            String prompt = "Analyze the following chess position and give a piece of advice without directly saying " +
-                    "which piece to move. The position in FEN format is the following: " + fen;
+            String prompt = "You are an expert chess coach and puzzle instructor. Carefully analyze the following chess position and provide exactly three hints to help solve the problem.\n" +
+                    "\n" +
+                    "The hints must be progressively more specific:\n" +
+                    "\n" +
+                    "Hint 1 should be very general and focus on high-level evaluation or strategic ideas.\n" +
+                    "\n" +
+                    "Hint 2 should narrow the focus to relevant tactical or positional themes.\n" +
+                    "\n" +
+                    "Hint 3 should make the solution quite clear, while still not explicitly stating the exact move.\n" +
+                    "\n" +
+                    "Do NOT mention any specific move, square, or explicit piece movement.\n" +
+                    "\n" +
+                    "The hints must focus on advanced chess concepts such as king safety, piece activity, weak squares, pins, skewers, discovered attacks, overloaded pieces, coordination, or tactical motifs — not on “which piece to move.”\n" +
+                    "\n" +
+                    "Use precise chess terminology and the correct names of the pieces (pawn, knight, bishop, rook, queen, king).\n" +
+                    "\n" +
+                    "Write each hint as a short paragraph, clearly labeled as Hint 1, Hint 2, and Hint 3.\n" +
+                    "\n" +
+                    "The tone should be instructive and clear, as if teaching a strong club player.\n" +
+                    "\n" +
+                    "The position is given in FEN format:" + fen;
 
             // 3. Tu código de llamada (con el modelo corregido a 1.5)
             GenerateContentResponse response = client.models.generateContent(
