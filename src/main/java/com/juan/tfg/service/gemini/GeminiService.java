@@ -5,6 +5,8 @@ import com.google.genai.types.GenerateContentResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class GeminiService {
 
@@ -12,7 +14,7 @@ public class GeminiService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
-    public void probarConexion(String fen) {
+    public void probarConexion(String fen, List<String> solution, List<String> themes) {
         try {
             System.out.println("🤖 Iniciando petición a Gemini...");
 
@@ -39,11 +41,12 @@ public class GeminiService {
                     "\n" +
                     "Use precise chess terminology and the correct names of the pieces (pawn, knight, bishop, rook, queen, king).\n" +
                     "\n" +
-                    "Write each hint as a short paragraph, clearly labeled as Hint 1, Hint 2, and Hint 3.\n" +
+                    "Write each hint as a short phrase, clearly labeled as Hint 1, Hint 2, and Hint 3.\n" +
                     "\n" +
                     "The tone should be instructive and clear, as if teaching a strong club player.\n" +
                     "\n" +
-                    "The position is given in FEN format:" + fen;
+                    "The position is given in FEN format:" + fen + " and the solution is " + solution + "\n" +
+                    "You can use the themes of the problem as a guide: " + themes;
 
             // 3. Tu código de llamada (con el modelo corregido a 1.5)
             GenerateContentResponse response = client.models.generateContent(
