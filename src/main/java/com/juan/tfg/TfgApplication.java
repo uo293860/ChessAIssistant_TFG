@@ -10,6 +10,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import java.util.List;
+
 
 @SpringBootApplication
 public class TfgApplication {
@@ -23,9 +25,10 @@ public class TfgApplication {
 		return (args) -> {
 			// Llamamos a tu servicio
 			LichessPuzzleResponse response = lichessService.probarConexion();
-			LichessPuzzleResponse lichessPuzzleResponse = new LichessPuzzleResponse();
 			String pgnRaw = response.getGame().getPgn();
 			int ply = response.getPuzzle().getInitialPly(); // En tu ejemplo es 60
+			List<String> solution = response.getPuzzle().getSolution();
+			List<String> themes = response.getPuzzle().getThemes();
 
 			System.out.println("⏳ Reconstruyendo partida hasta el movimiento: " + ply);
 
@@ -36,7 +39,7 @@ public class TfgApplication {
 			// Nota: board.getFen() nos devuelve el String FEN que necesita tu printer antiguo
 			ConsoleBoardPrinter.printBoard(board);
 			System.out.println("This is a piece of advice for the previous problem");
-			geminiService.probarConexion(board);
+			geminiService.probarConexion(board, solution, themes);
 		};
 	}
 
