@@ -20,9 +20,9 @@ public class LichessPuzzleResponse {
     @Data
     public static class PuzzleData {
         private String id;
-        private Integer rating;
+        private int rating;
         private List<String> solution;
-        private Integer initialPly; // Este número es CLAVE
+        private int initialPly; // Este número es CLAVE
         private List<String> themes;
     }
 }

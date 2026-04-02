@@ -12,7 +12,6 @@ import org.springframework.context.annotation.Bean;
 
 import java.util.List;
 
-
 @SpringBootApplication
 public class TfgApplication {
 
@@ -36,7 +35,8 @@ public class TfgApplication {
 			String board = PgnHelper.getFenFromPgn(pgnRaw);
 
 			// 2. Usamos tu método anterior para pintarlo
-			// Nota: board.getFen() nos devuelve el String FEN que necesita tu printer antiguo
+			// Nota: board.getFen() nos devuelve el String FEN que necesita tu printer
+			// antiguo
 			ConsoleBoardPrinter.printBoard(board);
 			System.out.println("This is a piece of advice for the previous problem");
 			geminiService.probarConexion(board, solution, themes);

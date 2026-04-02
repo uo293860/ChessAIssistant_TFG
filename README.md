@@ -16,7 +16,7 @@ El objetivo principal es simular la experiencia de tener un entrenador humano: e
 ### ✨ Características Principales
 
 - **🧩 Puzzles Reales:** Obtención dinámica de ejercicios tácticos desde la API de Lichess.
-- **🤖 Tutor IA Interactivo:** Integración con Gemini para explicar *por qué* una jugada es buena o mala sin hacer spoilers directos.
+- **🤖 Tutor IA Interactivo:** Integración con Gemini para explicar _por qué_ una jugada es buena o mala sin hacer spoilers directos.
 - **📈 Adaptabilidad:** Selección de problemas basada en el ELO (nivel) del usuario.
 - **💡 Sistema de Pistas:** El usuario puede solicitar ayuda textual ("¿Qué pieza debo mover?", "¿Hay algún mate cerca?").
 
@@ -24,12 +24,12 @@ El objetivo principal es simular la experiencia de tener un entrenador humano: e
 
 ## 🛠️ Stack Tecnológico
 
-| Componente | Tecnología | Uso |
-| :--- | :--- | :--- |
-| **Backend** | Java Spring Boot | API REST, Lógica de negocio, Gestión de sesiones. |
-| **IA** | Google Gemini API | Generación de explicaciones y análisis de FEN/PGN. |
-| **Datos** | Lichess API | Fuente de los problemas tácticos (Puzzles). |
-| **Frontend** | TBD | Interfaz de usuario y tablero de ajedrez. |
+| Componente   | Tecnología         | Uso                                                |
+| :----------- | :----------------- | :------------------------------------------------- |
+| **Backend**  | Java Spring Boot   | API REST, Lógica de negocio, Gestión de sesiones.  |
+| **IA**       | Google Gemini API  | Generación de explicaciones y análisis de FEN/PGN. |
+| **Datos**    | Lichess API        | Fuente de los problemas tácticos (Puzzles).        |
+| **Frontend** | React - TypeScript | Interfaz de usuario y tablero de ajedrez.          |
 
 ---
 
