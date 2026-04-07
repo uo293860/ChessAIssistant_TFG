@@ -50,7 +50,7 @@ public class GeminiService {
 
             // 3. Tu código de llamada (con el modelo corregido a 1.5)
             GenerateContentResponse response = client.models.generateContent(
-                    "gemini-2.5-flash",
+                    "gemini-3.1-flash-lite-preview",
                     prompt,
                     null
             );

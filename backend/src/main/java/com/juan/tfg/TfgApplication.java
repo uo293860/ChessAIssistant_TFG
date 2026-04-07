@@ -29,12 +29,12 @@ public class TfgApplication {
 			List<String> solution = response.getPuzzle().getSolution();
 			List<String> themes = response.getPuzzle().getThemes();
 
-			System.out.println("⏳ Reconstruyendo partida hasta el movimiento: " + ply);
+			System.out.println("⏳ Reconstruyendo partida hasta el movimiento: " + ply+1);
 
 			// 1. Obtenemos el objeto Board en el estado exacto del puzzle
 			String board = PgnHelper.getFenFromPgn(pgnRaw);
 
-			// 2. Usamos tu método anterior para pintarlo
+			// 2. Usamos tu metodo anterior para pintarlo
 			// Nota: board.getFen() nos devuelve el String FEN que necesita tu printer
 			// antiguo
 			ConsoleBoardPrinter.printBoard(board);

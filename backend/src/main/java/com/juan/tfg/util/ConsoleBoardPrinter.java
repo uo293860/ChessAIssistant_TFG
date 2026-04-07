@@ -2,47 +2,89 @@ package com.juan.tfg.util;
 
 import com.github.bhlangonijr.chesslib.Board;
 import com.github.bhlangonijr.chesslib.Piece;
+import com.github.bhlangonijr.chesslib.Side;
 import com.github.bhlangonijr.chesslib.Square;
 
 public class ConsoleBoardPrinter {
 
+    private static final int BOARD_SIZE = 8;
+    private static final int ROW_LABEL_WIDTH = 2;
+    private static final int CELL_CONTENT_WIDTH = 1;
+
     public static void printBoard(String fen) {
         Board board = new Board();
-        board.loadFromFen(fen); // Carga la posición del puzzle
+        board.loadFromFen(fen);
+        Side perspective = board.getSideToMove();
 
-        System.out.println("\n  --- TABLERO ACTUAL (Juegan " + board.getSideToMove() + ") ---");
+        System.out.printf("%n  --- CURRENT BOARD (%s to move) ---%n", perspective);
+        System.out.println(buildColumnLabels(perspective));
 
-        // Bucle para pintar las filas (Rank 8 a 1)
-        for (int rank = 7; rank >= 0; rank--) {
-            System.out.print((rank + 1) + " "); // Número de fila
+        for (int displayRank = 0; displayRank < BOARD_SIZE; displayRank++) {
+            StringBuilder rowBuilder = new StringBuilder();
+            int rank = getRankIndex(displayRank, perspective);
+            int rankLabel = getRankLabel(rank, perspective);
+            rowBuilder.append(String.format("%" + ROW_LABEL_WIDTH + "d ", rankLabel));
 
-            // Bucle para las columnas (File A a H)
-            for (int file = 0; file < 8; file++) {
-                Square square = Square.squareAt(rank * 8 + file);
+            for (int displayFile = 0; displayFile < BOARD_SIZE; displayFile++) {
+                int file = getFileIndex(displayFile, perspective);
+                Square square = Square.squareAt(rank * BOARD_SIZE + file);
                 Piece piece = board.getPiece(square);
-                System.out.print("[" + getUnicodePiece(piece) + "]");
+                rowBuilder.append(formatCell(piece));
             }
-            System.out.println();
+
+            rowBuilder.append(' ').append(rankLabel);
+            System.out.println(rowBuilder);
         }
-        System.out.println("   A  B  C  D  E  F  G  H\n");
+
+        System.out.println(buildColumnLabels(perspective));
+        System.out.println();
     }
 
-    // Convierte las piezas internas de la librería a iconos bonitos
-    private static String getUnicodePiece(Piece piece) {
+    private static String buildColumnLabels(Side perspective) {
+        StringBuilder labels = new StringBuilder("   ");
+        for (int displayFile = 0; displayFile < BOARD_SIZE; displayFile++) {
+            char fileLabel = getFileLabel(displayFile, perspective);
+            labels.append(String.format(" %" + CELL_CONTENT_WIDTH + "s ", fileLabel));
+        }
+        return labels.toString();
+    }
+
+    private static int getRankIndex(int displayRank, Side perspective) {
+        return perspective == Side.WHITE ? BOARD_SIZE - 1 - displayRank : displayRank;
+    }
+
+    private static int getFileIndex(int displayFile, Side perspective) {
+        return perspective == Side.WHITE ? displayFile : BOARD_SIZE - 1 - displayFile;
+    }
+
+    private static int getRankLabel(int rank, Side perspective) {
+        return rank + 1;
+    }
+
+    private static char getFileLabel(int displayFile, Side perspective) {
+        int file = getFileIndex(displayFile, perspective);
+        return (char) ('A' + file);
+    }
+
+    private static String formatCell(Piece piece) {
+        return String.format("[%1$-" + CELL_CONTENT_WIDTH + "s]", getPieceSymbol(piece));
+    }
+
+    private static String getPieceSymbol(Piece piece) {
         return switch (piece) {
-            case WHITE_KING -> "♔";
-            case WHITE_QUEEN -> "♕";
-            case WHITE_ROOK -> "♖";
-            case WHITE_BISHOP -> "♗";
-            case WHITE_KNIGHT -> "♘";
-            case WHITE_PAWN -> "♙";
-            case BLACK_KING -> "♚";
-            case BLACK_QUEEN -> "♛";
-            case BLACK_ROOK -> "♜";
-            case BLACK_BISHOP -> "♝";
-            case BLACK_KNIGHT -> "♞";
-            case BLACK_PAWN -> "♟";
-            default -> " "; // Casilla vacía
+            case WHITE_KING -> "K";
+            case WHITE_QUEEN -> "Q";
+            case WHITE_ROOK -> "R";
+            case WHITE_BISHOP -> "B";
+            case WHITE_KNIGHT -> "N";
+            case WHITE_PAWN -> "P";
+            case BLACK_KING -> "k";
+            case BLACK_QUEEN -> "q";
+            case BLACK_ROOK -> "r";
+            case BLACK_BISHOP -> "b";
+            case BLACK_KNIGHT -> "n";
+            case BLACK_PAWN -> "p";
+            default -> " ";
         };
     }
 }
