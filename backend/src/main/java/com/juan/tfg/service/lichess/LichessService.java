@@ -2,7 +2,7 @@ package com.juan.tfg.service.lichess;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.juan.tfg.model.dto.LichessPuzzleResponse;
+import com.juan.tfg.model.Puzzle;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -14,7 +14,7 @@ import java.net.http.HttpResponse;
 @Service
 public class LichessService {
 
-    public LichessPuzzleResponse probarConexion() throws IOException, InterruptedException {
+    public Puzzle probarConexion() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://lichess.org/api/puzzle/daily"))
                 .method("GET", HttpRequest.BodyPublishers.noBody())
@@ -31,11 +31,9 @@ public class LichessService {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
 // "Convierte el cuerpo de la respuesta (String) a mi clase LichessPuzzleResponse"
-        LichessPuzzleResponse puzzleResponse = mapper.readValue(response.body(), LichessPuzzleResponse.class);
+        Puzzle puzzleResponse = mapper.readValue(response.body(), Puzzle.class);
 
 // 3. AHORA SÍ puedes usar los getters
-        System.out.println("ID del juego: " + puzzleResponse.getGame().getId());
-        System.out.println("PGN: " + puzzleResponse.getGame().getPgn());
 
 // Si quieres devolver el objeto para usarlo fuera:
         return puzzleResponse;

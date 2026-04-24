@@ -1,4 +1,7 @@
 package com.juan.tfg.repository;
 
-public class UserRepository {
+import com.juan.tfg.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, String> {
 }

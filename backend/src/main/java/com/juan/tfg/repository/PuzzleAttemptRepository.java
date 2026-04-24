@@ -1,4 +1,7 @@
 package com.juan.tfg.repository;
 
-public class PuzzleAttemptRepository {
+import com.juan.tfg.model.PuzzleAttempt;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Long> {
 }
