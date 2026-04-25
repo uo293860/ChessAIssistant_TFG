@@ -3,6 +3,8 @@ package com.juan.tfg.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Arrays;
+
 @Entity
 @Table(name = "puzzles")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
@@ -27,8 +29,23 @@ public class Puzzle {
     @Column(name = "game_url")
     private String gameUrl;
 
-    public String getInitialMove(){
-        String[] movesArray = getMoves().split(" ");
+    public String getInitialMove() {
+        String[] movesArray = getMovesArray();
         return movesArray.length > 0 ? movesArray[0] : "";
+    }
+
+    public String getMoveAt(int index) {
+        String[] movesArray = getMovesArray();
+        return index >= 0 && index < movesArray.length ? movesArray[index] : "";
+    }
+
+    public int getMoveCount() {
+        return getMovesArray().length;
+    }
+
+    private String[] getMovesArray() {
+        return Arrays.stream(getMoves().trim().split("\\s+"))
+                .filter(move -> !move.isBlank())
+                .toArray(String[]::new);
     }
 }

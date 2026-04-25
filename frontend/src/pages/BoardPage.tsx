@@ -29,6 +29,19 @@ type PuzzleDTO = {
   initialMove: string
 }
 
+type VerifyPuzzleMoveRequestDTO = {
+  puzzleId: string
+  move: string
+  moveIndex: number
+}
+
+type VerifyPuzzleMoveResponseDTO = {
+  correct: boolean
+  opponentMove: string
+  nextMoveIndex: number
+  puzzleCompleted: boolean
+}
+
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
 const INITIAL_MOVE_DELAY_MS = 1200
 const lightSquareColor = '#f0f0f0'
@@ -67,7 +80,12 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
   const [legalTargets, setLegalTargets] = useState<Square[]>([])
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null)
-  const initialMoveTimeoutRef = useRef<number | null>(null)
+  const [moveFeedback, setMoveFeedback] = useState<string | null>(null)
+  const [isVerifyingMove, setIsVerifyingMove] = useState(false)
+  const [isReplayingOpponentMove, setIsReplayingOpponentMove] = useState(false)
+  const [currentMoveIndex, setCurrentMoveIndex] = useState(1)
+  const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
+  const replayTimeoutRef = useRef<number | null>(null)
 
   const clearSelection = () => {
     setSelectedSquare(null)
@@ -75,10 +93,10 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     setPendingPromotion(null)
   }
 
-  const clearInitialMoveTimeout = () => {
-    if (initialMoveTimeoutRef.current !== null) {
-      window.clearTimeout(initialMoveTimeoutRef.current)
-      initialMoveTimeoutRef.current = null
+  const clearReplayTimeout = () => {
+    if (replayTimeoutRef.current !== null) {
+      window.clearTimeout(replayTimeoutRef.current)
+      replayTimeoutRef.current = null
     }
   }
 
@@ -98,11 +116,19 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     }
 
     setIsReplayingInitialMove(true)
-    initialMoveTimeoutRef.current = window.setTimeout(() => {
+    replayTimeoutRef.current = window.setTimeout(() => {
       setGame(getPositionAfterInitialMove(nextPuzzle))
       setIsReplayingInitialMove(false)
-      initialMoveTimeoutRef.current = null
+      replayTimeoutRef.current = null
     }, INITIAL_MOVE_DELAY_MS)
+  }
+
+  const replayPuzzleMove = (position: Chess, move: string) => {
+    if (move) {
+      position.move(move)
+    }
+
+    return position
   }
 
   const selectSquare = (square: Square) => {
@@ -111,7 +137,31 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     setLegalTargets(legalMoves.map((move) => move.to))
   }
 
-  const commitMove = (from: Square, to: Square, promotion?: PromotionPiece) => {
+  const buildUciMove = (from: Square, to: Square, promotion?: PromotionPiece) => {
+    return `${from}${to}${promotion ?? ''}`
+  }
+
+  const verifyPuzzleMove = async (request: VerifyPuzzleMoveRequestDTO) => {
+    const response = await fetch('http://localhost:8080/api/puzzles/verify-move', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    })
+
+    if (!response.ok) {
+      throw new Error('Unable to verify the puzzle move.')
+    }
+
+    return (await response.json()) as VerifyPuzzleMoveResponseDTO
+  }
+
+  const tryPuzzleMove = async (from: Square, to: Square, promotion?: PromotionPiece) => {
+    if (!puzzle || isPuzzleCompleted) {
+      return false
+    }
+
     const nextGame = new Chess(game.fen())
     const moveResult = nextGame.move({ from, to, promotion })
 
@@ -119,15 +169,67 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
       return false
     }
 
-    setGame(nextGame)
-    clearSelection()
-    return true
+    setIsVerifyingMove(true)
+
+    try {
+      const verification = await verifyPuzzleMove({
+        puzzleId: puzzle.id,
+        move: buildUciMove(from, to, promotion),
+        moveIndex: currentMoveIndex,
+      })
+
+      if (!verification.correct) {
+        clearSelection()
+        setMoveFeedback('Incorrect move.')
+        return false
+      }
+
+      setGame(nextGame)
+      clearSelection()
+
+      if (verification.opponentMove) {
+        const resolvedGame = new Chess(nextGame.fen())
+        setIsReplayingOpponentMove(true)
+        setMoveFeedback('Correct move. Waiting for the opponent reply.')
+
+        replayTimeoutRef.current = window.setTimeout(() => {
+          replayPuzzleMove(resolvedGame, verification.opponentMove)
+          setGame(resolvedGame)
+          setCurrentMoveIndex(verification.nextMoveIndex)
+          setIsPuzzleCompleted(verification.puzzleCompleted)
+          setIsReplayingOpponentMove(false)
+          setMoveFeedback(
+            verification.puzzleCompleted
+              ? 'Correct move. Puzzle completed.'
+              : `Correct move. Opponent replied with ${verification.opponentMove}.`
+          )
+          replayTimeoutRef.current = null
+        }, INITIAL_MOVE_DELAY_MS)
+        return true
+      }
+
+      setCurrentMoveIndex(verification.nextMoveIndex)
+      setIsPuzzleCompleted(verification.puzzleCompleted)
+      setMoveFeedback(verification.puzzleCompleted ? 'Correct move. Puzzle completed.' : 'Correct move.')
+      return true
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to verify the puzzle move.'
+      setMoveFeedback(message)
+      return false
+    } finally {
+      setIsVerifyingMove(false)
+    }
   }
 
   const loadRandomPuzzle = async () => {
-    clearInitialMoveTimeout()
+    clearReplayTimeout()
     setIsPuzzleLoading(true)
     setIsReplayingInitialMove(false)
+    setIsReplayingOpponentMove(false)
+    setIsVerifyingMove(false)
+    setMoveFeedback(null)
+    setCurrentMoveIndex(1)
+    setIsPuzzleCompleted(false)
     clearSelection()
 
     const response = await fetch('http://localhost:8080/api/puzzles/random')
@@ -143,7 +245,7 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
 
   useEffect(() => {
     void loadRandomPuzzle()
-    return () => clearInitialMoveTimeout()
+    return () => clearReplayTimeout()
   }, [])
 
   const handlePromotionChoice = (promotion: PromotionPiece) => {
@@ -151,11 +253,11 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
       return
     }
 
-    commitMove(pendingPromotion.from, pendingPromotion.to, promotion)
+    void tryPuzzleMove(pendingPromotion.from, pendingPromotion.to, promotion)
   }
 
   const handleSquareClick = ({ square }: { square: string }) => {
-    if (isPuzzleLoading || isReplayingInitialMove) {
+    if (isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted) {
       return
     }
 
@@ -176,7 +278,7 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
         return
       }
 
-      commitMove(selectedSquare, boardSquare)
+      void tryPuzzleMove(selectedSquare, boardSquare)
       return
     }
 
@@ -200,7 +302,7 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     sourceSquare: string
     targetSquare: string | null
   }) => {
-    if (!targetSquare || isPuzzleLoading || isReplayingInitialMove) {
+    if (!targetSquare || isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted) {
       return false
     }
 
@@ -226,7 +328,8 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
       return false
     }
 
-    return commitMove(from, to)
+    void tryPuzzleMove(from, to)
+    return false
   }
 
   const squareStyles: Record<string, CSSProperties> = {}
@@ -246,7 +349,8 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     }
   }
 
-  const boardInteractionDisabled = isPuzzleLoading || isReplayingInitialMove
+  const boardInteractionDisabled =
+    isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted
 
   return (
     <main className="board-shell">
@@ -320,6 +424,12 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
             <p className="panel-copy">
               {isReplayingInitialMove
                 ? `Showing the starting position. The opponent move ${puzzle?.initialMove ?? ''} will play in a moment.`
+                : isReplayingOpponentMove
+                  ? 'Waiting for the opponent reply.'
+                : isVerifyingMove
+                  ? 'Verifying your move with the backend.'
+                : isPuzzleCompleted
+                  ? 'Puzzle solved. Load a new puzzle to continue.'
                 : pendingPromotion
                   ? `Choose a promotion piece for ${pendingPromotion.to}.`
                   : selectedSquare
@@ -335,7 +445,7 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
             <strong>{puzzle?.id ?? 'No puzzle loaded'}</strong>
             <p className="panel-copy">
               {puzzle
-                ? `Rating ${puzzle.rating}. Themes: ${puzzle.themes || 'No themes available.'} Last move: ${puzzle.initialMove || 'Unknown'}.`
+                ? `Rating ${puzzle.rating}. Themes: ${puzzle.themes || 'No themes available.'} Last move: ${puzzle.initialMove || 'Unknown'}. Current solution step: ${currentMoveIndex}.`
                 : 'The board will show the fetched puzzle position.'}
             </p>
           </div>
@@ -385,6 +495,11 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
           <div className="board-panel">
             <p className="panel-title">Moves</p>
             <p className="moves-output">{game.pgn() || 'No moves played yet.'}</p>
+          </div>
+
+          <div className="board-panel">
+            <p className="panel-title">Move validation</p>
+            <p className="moves-output">{moveFeedback ?? 'No move verified yet.'}</p>
           </div>
         </aside>
       </section>
