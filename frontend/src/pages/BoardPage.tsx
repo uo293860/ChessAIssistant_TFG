@@ -81,6 +81,9 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
   const [legalTargets, setLegalTargets] = useState<Square[]>([])
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null)
   const [moveFeedback, setMoveFeedback] = useState<string | null>(null)
+  const [puzzleHints, setPuzzleHints] = useState<string[]>([])
+  const [revealedHintCount, setRevealedHintCount] = useState(0)
+  const [isHintsLoading, setIsHintsLoading] = useState(false)
   const [isVerifyingMove, setIsVerifyingMove] = useState(false)
   const [isReplayingOpponentMove, setIsReplayingOpponentMove] = useState(false)
   const [currentMoveIndex, setCurrentMoveIndex] = useState(1)
@@ -228,6 +231,9 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     setIsReplayingOpponentMove(false)
     setIsVerifyingMove(false)
     setMoveFeedback(null)
+    setPuzzleHints([])
+    setRevealedHintCount(0)
+    setIsHintsLoading(false)
     setCurrentMoveIndex(1)
     setIsPuzzleCompleted(false)
     clearSelection()
@@ -241,6 +247,38 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     setGame(new Chess(nextPuzzle.fen))
     replayInitialMove(nextPuzzle)
     setIsPuzzleLoading(false)
+  }
+
+  const loadHints = async () => {
+    if (!puzzle) {
+      return
+    }
+
+    if (puzzleHints.length > 0) {
+      setRevealedHintCount((currentCount) => Math.min(currentCount + 1, puzzleHints.length))
+      return
+    }
+
+    setIsHintsLoading(true)
+
+    try {
+      const response = await fetch(`http://localhost:8080/api/puzzles/${puzzle.id}/hints`)
+
+      if (!response.ok) {
+        throw new Error('Unable to load puzzle hints.')
+      }
+
+      const nextHints = (await response.json()) as string[]
+      const sanitizedHints = nextHints.filter((hint) => hint.trim().length > 0)
+      setPuzzleHints(sanitizedHints)
+      setRevealedHintCount(sanitizedHints.length > 0 ? 1 : 0)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load puzzle hints.'
+      setPuzzleHints([message])
+      setRevealedHintCount(1)
+    } finally {
+      setIsHintsLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -351,6 +389,8 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
 
   const boardInteractionDisabled =
     isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted
+  const displayedHints = puzzleHints.slice(0, revealedHintCount)
+  const areHintsExhausted = puzzleHints.length > 0 && revealedHintCount >= Math.min(puzzleHints.length, 3)
 
   return (
     <main className="board-shell">
@@ -367,6 +407,14 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
         <div className="board-actions">
           <button type="button" className="primary-action compact-action" onClick={handleBoardReset}>
             New puzzle
+          </button>
+          <button
+            type="button"
+            className="primary-action compact-action"
+            onClick={askHints}
+            disabled={!puzzle || isHintsLoading || areHintsExhausted}
+          >
+            Ask for AIssistance
           </button>
           <button type="button" className="secondary-action compact-action" onClick={onBack}>
             Back to auth
@@ -501,6 +549,17 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
             <p className="panel-title">Move validation</p>
             <p className="moves-output">{moveFeedback ?? 'No move verified yet.'}</p>
           </div>
+
+          <div className="board-panel">
+            <p className="panel-title">Hints</p>
+            <div className="moves-output">
+              {isHintsLoading
+                ? 'Loading hints...'
+                : displayedHints.length > 0
+                  ? displayedHints.map((hint, index) => <p key={`${index}-${hint}`}>{hint}</p>)
+                  : 'Ask for AIssistance to load hints for this puzzle.'}
+            </div>
+          </div>
         </aside>
       </section>
     </main>
@@ -508,5 +567,9 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
 
   function handleBoardReset() {
     void loadRandomPuzzle()
+  }
+
+  function askHints() {
+    void loadHints()
   }
 }

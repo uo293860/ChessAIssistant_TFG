@@ -4,8 +4,11 @@ import com.juan.tfg.model.Puzzle;
 import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.repository.PuzzleRepository;
+import com.juan.tfg.service.gemini.GeminiService;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -13,14 +16,20 @@ import java.util.Optional;
 public class PuzzleService {
 
     private final PuzzleRepository puzzleRepository;
+    private final GeminiService geminiService;
 
     public Optional<PuzzleDTO> getRandomPuzzle(String theme, int minRating, int maxRating) {
         return puzzleRepository.findRandomPuzzleByThemeAndRating(theme, minRating, maxRating)
                 .map(PuzzleDTO::from);
     }
 
-    public Optional<PuzzleMoveVerificationResponseDTO> verifyMove(String puzzleId, String move) {
-        return verifyMove(puzzleId, move, 1);
+    public Optional<String[]> getPuzzleHints(String puzzleId) {
+        if (puzzleId == null || puzzleId.isBlank()) {
+            return Optional.empty();
+        }
+
+        return puzzleRepository.findById(puzzleId)
+                .map(this::generateHints);
     }
 
     public Optional<PuzzleMoveVerificationResponseDTO> verifyMove(String puzzleId, String move, int moveIndex) {
@@ -59,4 +68,18 @@ public class PuzzleService {
     private String getOptionalNormalizedMove(Puzzle puzzle, int moveIndex) {
         return puzzle.getMoveAt(moveIndex).trim().toLowerCase();
     }
+
+    private String[] generateHints(Puzzle puzzle) {
+        List<String> solution = Arrays.stream(puzzle.getMoves().trim().split("\\s+"))
+                .filter(move -> !move.isBlank())
+                .toList();
+
+        List<String> themes = Arrays.stream(Optional.ofNullable(puzzle.getThemes()).orElse("").split("\\s+"))
+                .filter(theme -> !theme.isBlank())
+                .toList();
+
+        return geminiService.getHints(puzzle.getFen(), solution, themes);
+    }
+
+
 }

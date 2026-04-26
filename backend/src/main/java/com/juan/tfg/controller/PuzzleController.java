@@ -26,6 +26,13 @@ public class PuzzleController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/{puzzleId}/hints")
+    public ResponseEntity<String[]> getPuzzleHints(@PathVariable String puzzleId) {
+        return puzzleService.getPuzzleHints(puzzleId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/verify-move")
     public ResponseEntity<PuzzleMoveVerificationResponseDTO> verifyMove(
             @RequestBody PuzzleMoveVerificationRequestDTO request
@@ -34,4 +41,6 @@ public class PuzzleController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+
 }

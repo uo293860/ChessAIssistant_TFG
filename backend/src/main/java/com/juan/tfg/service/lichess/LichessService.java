@@ -23,19 +23,12 @@ public class LichessService {
         HttpResponse<String> response = HttpClient.newHttpClient()
                 .send(request, HttpResponse.BodyHandlers.ofString());
 
-// 2. EL PASO QUE FALTABA: Convertir el JSON (String) a Objetos Java
         ObjectMapper mapper = new ObjectMapper();
 
-// Configuración recomendada: Si Lichess añade campos nuevos en el futuro
-// que no tengas en tu clase, esto evita que tu app falle.
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-// "Convierte el cuerpo de la respuesta (String) a mi clase LichessPuzzleResponse"
         Puzzle puzzleResponse = mapper.readValue(response.body(), Puzzle.class);
 
-// 3. AHORA SÍ puedes usar los getters
-
-// Si quieres devolver el objeto para usarlo fuera:
         return puzzleResponse;
     }
 }
