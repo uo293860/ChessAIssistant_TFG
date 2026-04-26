@@ -167,19 +167,24 @@ function App() {
   const renderAuthPage = () => (
     <main className="auth-shell">
       <section className="auth-hero">
-        <p className="eyebrow">Chess Assistant</p>
-        <h1>Enter the board.</h1>
+        <p className="eyebrow">Enter the board</p>
+        <h1>Chess AIssistant</h1>
         <p className="hero-copy">
-          Sign in with email and password or continue with Google to access the chess board.
+          The first ever AI tutor that helps you understand the board.
         </p>
 
         <div className="hero-pattern" aria-hidden="true">
-          {Array.from({ length: 16 }, (_, index) => (
-            <span
-              key={index}
-              className={index % 2 === 0 ? 'pattern-square light' : 'pattern-square dark'}
-            />
-          ))}
+          {Array.from({ length: 16 }, (_, index) => {
+            const row = Math.floor(index / 4);
+            const col = index % 4;
+            const isLight = (row + col) % 2 === 0;
+            return (
+                <span
+                    key={index}
+                    className={`pattern-square ${isLight ? 'light' : 'dark'}`}
+                />
+            );
+          })}
         </div>
 
         <div className="hero-note">
@@ -313,7 +318,6 @@ function App() {
       <BoardPage
         isLoading={isLoading}
         userEmail={currentUser.email}
-        onBack={() => openRoute(AUTH_ROUTE)}
         onSignOut={handleSignOut}
       />
     )

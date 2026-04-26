@@ -10,7 +10,6 @@ type PromotionPiece = 'b' | 'n' | 'r' | 'q'
 type BoardPageProps = {
   isLoading: boolean
   userEmail?: string | null
-  onBack: () => void
   onSignOut: () => Promise<void>
 }
 
@@ -71,7 +70,7 @@ const getPieceCode = (color: ChessColor, piece: PromotionPiece) => {
   return `${color}${piece.toUpperCase()}`
 }
 
-export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPageProps) {
+export function BoardPage({ isLoading, onSignOut }: BoardPageProps) {
   const [game, setGame] = useState(() => new Chess())
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
   const [puzzle, setPuzzle] = useState<PuzzleDTO | null>(null)
@@ -80,7 +79,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
   const [legalTargets, setLegalTargets] = useState<Square[]>([])
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null)
-  const [moveFeedback, setMoveFeedback] = useState<string | null>(null)
   const [puzzleHints, setPuzzleHints] = useState<string[]>([])
   const [revealedHintCount, setRevealedHintCount] = useState(0)
   const [isHintsLoading, setIsHintsLoading] = useState(false)
@@ -183,7 +181,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
 
       if (!verification.correct) {
         clearSelection()
-        setMoveFeedback('Incorrect move.')
         return false
       }
 
@@ -193,7 +190,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
       if (verification.opponentMove) {
         const resolvedGame = new Chess(nextGame.fen())
         setIsReplayingOpponentMove(true)
-        setMoveFeedback('Correct move. Waiting for the opponent reply.')
 
         replayTimeoutRef.current = window.setTimeout(() => {
           replayPuzzleMove(resolvedGame, verification.opponentMove)
@@ -201,11 +197,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
           setCurrentMoveIndex(verification.nextMoveIndex)
           setIsPuzzleCompleted(verification.puzzleCompleted)
           setIsReplayingOpponentMove(false)
-          setMoveFeedback(
-            verification.puzzleCompleted
-              ? 'Correct move. Puzzle completed.'
-              : `Correct move. Opponent replied with ${verification.opponentMove}.`
-          )
           replayTimeoutRef.current = null
         }, INITIAL_MOVE_DELAY_MS)
         return true
@@ -213,12 +204,7 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
 
       setCurrentMoveIndex(verification.nextMoveIndex)
       setIsPuzzleCompleted(verification.puzzleCompleted)
-      setMoveFeedback(verification.puzzleCompleted ? 'Correct move. Puzzle completed.' : 'Correct move.')
       return true
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to verify the puzzle move.'
-      setMoveFeedback(message)
-      return false
     } finally {
       setIsVerifyingMove(false)
     }
@@ -230,7 +216,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     setIsReplayingInitialMove(false)
     setIsReplayingOpponentMove(false)
     setIsVerifyingMove(false)
-    setMoveFeedback(null)
     setPuzzleHints([])
     setRevealedHintCount(0)
     setIsHintsLoading(false)
@@ -396,29 +381,9 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
     <main className="board-shell">
       <section className="board-header-card">
         <div>
-          <p className="eyebrow">Protected endpoint</p>
-          <h1>Random Chess Puzzle</h1>
-          <p className="hero-copy board-copy">
-            This page is available only to authenticated users. It loads one random puzzle from the backend, pauses on
-            the original FEN, and then replays the opponent&apos;s last move before you start solving.
-          </p>
+          <h1>ChessAIssistant</h1>
         </div>
-
         <div className="board-actions">
-          <button type="button" className="primary-action compact-action" onClick={handleBoardReset}>
-            New puzzle
-          </button>
-          <button
-            type="button"
-            className="primary-action compact-action"
-            onClick={askHints}
-            disabled={!puzzle || isHintsLoading || areHintsExhausted}
-          >
-            Ask for AIssistance
-          </button>
-          <button type="button" className="secondary-action compact-action" onClick={onBack}>
-            Back to auth
-          </button>
           <button type="button" className="secondary-action compact-action" onClick={() => void onSignOut()} disabled={isLoading}>
             Sign out
           </button>
@@ -434,7 +399,7 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
                 position: game.fen(),
                 boardOrientation,
                 showNotation: true,
-                allowDrawingArrows: false,
+                allowDrawingArrows: true,
                 allowDragging: !boardInteractionDisabled,
                 animationDurationInMs: 220,
                 boardStyle: {
@@ -449,7 +414,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
                   if (boardInteractionDisabled || !piece) {
                     return false
                   }
-
                   return piece.pieceType[0].toLowerCase() === game.turn()
                 },
                 onSquareClick: handleSquareClick,
@@ -460,12 +424,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
         </div>
 
         <aside className="board-sidebar">
-          <div className="board-panel">
-            <p className="panel-title">Session</p>
-            <strong>{userEmail ?? 'Unknown user'}</strong>
-            <p className="panel-copy">Authenticated users can reload this route and keep access while Firebase keeps the session alive.</p>
-          </div>
-
           <div className="board-panel">
             <p className="panel-title">Game state</p>
             <strong>{isPuzzleLoading ? 'Loading puzzle...' : getStatusMessage(game)}</strong>
@@ -485,16 +443,6 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
                     : isPuzzleLoading
                       ? 'Fetching a random puzzle from the backend.'
                       : 'Drag a piece or click a square to see legal moves.'}
-            </p>
-          </div>
-
-          <div className="board-panel">
-            <p className="panel-title">Puzzle</p>
-            <strong>{puzzle?.id ?? 'No puzzle loaded'}</strong>
-            <p className="panel-copy">
-              {puzzle
-                ? `Rating ${puzzle.rating}. Themes: ${puzzle.themes || 'No themes available.'} Last move: ${puzzle.initialMove || 'Unknown'}. Current solution step: ${currentMoveIndex}.`
-                : 'The board will show the fetched puzzle position.'}
             </p>
           </div>
 
@@ -522,33 +470,20 @@ export function BoardPage({ isLoading, userEmail, onBack, onSignOut }: BoardPage
             </div>
           ) : null}
 
-          <div className="board-panel">
-            <p className="panel-title">FEN</p>
-            <code className="fen-output">{game.fen()}</code>
+          <div>
+            <button type="button" className="secondary-action compact-action" onClick={handleBoardReset}>
+              New puzzle
+            </button>
           </div>
 
-          <div className="board-panel">
-            <p className="panel-title">Source</p>
-            <p className="moves-output">
-              {puzzle?.gameUrl ? (
-                <a href={puzzle.gameUrl} target="_blank" rel="noreferrer">
-                  Open original game
-                </a>
-              ) : (
-                'No source game available.'
-              )}
-            </p>
-          </div>
-
-          <div className="board-panel">
-            <p className="panel-title">Moves</p>
-            <p className="moves-output">{game.pgn() || 'No moves played yet.'}</p>
-          </div>
-
-          <div className="board-panel">
-            <p className="panel-title">Move validation</p>
-            <p className="moves-output">{moveFeedback ?? 'No move verified yet.'}</p>
-          </div>
+          <button
+              type="button"
+              className="secondary-action compact-action"
+              onClick={askHints}
+              disabled={!puzzle || isHintsLoading || areHintsExhausted}
+          >
+            Ask for AIssistance
+          </button>
 
           <div className="board-panel">
             <p className="panel-title">Hints</p>
