@@ -15,9 +15,9 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/puzzles/**").permitAll()
                         .anyRequest().authenticated()
-                )
-                .addFilterBefore(new FirebaseTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+                );
 
         return http.build();
     }

@@ -12,7 +12,7 @@ import java.util.List;
 public class GeminiService {
 
     // 1. Spring inyecta aquí el valor que pusiste en application.properties
-    @Value("")
+    @Value("${GEMINI_API_KEY}")
     private String apiKey;
 
     public String[] getHints(String fen, List<String> solution, List<String> themes) {
