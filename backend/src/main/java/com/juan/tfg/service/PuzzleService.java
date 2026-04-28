@@ -69,6 +69,8 @@ public class PuzzleService {
         return puzzle.getMoveAt(moveIndex).trim().toLowerCase();
     }
 
+    /* TODO Try using an Open Source model instead of simply using Gemini API. Create
+    *  an adapter so that I would only have to change the model  */
     private String[] generateHints(Puzzle puzzle) {
         List<String> solution = Arrays.stream(puzzle.getMoves().trim().split("\\s+"))
                 .filter(move -> !move.isBlank())

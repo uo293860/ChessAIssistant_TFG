@@ -25,8 +25,8 @@ El objetivo principal es simular la experiencia de tener un entrenador humano: e
 ## 🛠️ Stack Tecnológico
 
 | Componente   | Tecnología         | Uso                                                |
-| :----------- | :----------------- | :------------------------------------------------- |
-| **Backend**  | Java Spring Boot   | API REST, Lógica de negocio, Gestión de sesiones.  |
+| :----------- | :----------------- |:---------------------------------------------------|
+| **Backend**  | Java Spring Boot   | API REST, Lógica de negocio.                       |
 | **IA**       | Google Gemini API  | Generación de explicaciones y análisis de FEN/PGN. |
 | **Datos**    | Lichess API        | Fuente de los problemas tácticos (Puzzles).        |
 | **Frontend** | React - TypeScript | Interfaz de usuario y tablero de ajedrez.          |

@@ -2,7 +2,6 @@ package com.juan.tfg.service.gemini;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
-import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +39,7 @@ public class GeminiService {
     }
 
     private static String getPrompt(String fen, List<String> solution, List<String> themes) {
+        // TODO Try using the PGN instead of the FEN position
         return "You are an expert chess coach and puzzle instructor. Carefully analyze the following chess position and provide exactly three hints to help solve the problem.\n" +
                 "\n" +
                 "The hints must be progressively more specific:\n" +

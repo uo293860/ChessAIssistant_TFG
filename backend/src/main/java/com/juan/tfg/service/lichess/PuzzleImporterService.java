@@ -28,7 +28,6 @@ public class PuzzleImporterService {
     }
 
     private void importPuzzles() {
-        // Usamos getResourceAsStream para leer el archivo dentro del JAR/Proyecto
         try (BufferedReader br = new BufferedReader(new InputStreamReader(
                 getClass().getResourceAsStream("/data/lichess_db_puzzle.csv"), StandardCharsets.UTF_8))) {
 
@@ -37,7 +36,6 @@ public class PuzzleImporterService {
             int count = 0;
 
             while ((line = br.readLine()) != null && count < 10000) {
-                // El CSV de Lichess usa comas, pero ojo si algún campo tiene comas internas
                 String[] data = line.split(",");
 
                 Puzzle puzzle = Puzzle.builder()
