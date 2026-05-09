@@ -1,10 +1,13 @@
 package com.juan.tfg.controller;
 
+import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationRequestDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.service.PuzzleService;
+import com.juan.tfg.service.UserService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class PuzzleController {
 
     private final PuzzleService puzzleService;
+    private final UserService userService;
 
     @GetMapping("/random")
     public ResponseEntity<PuzzleDTO> getRandomPuzzle(

@@ -12,15 +12,25 @@ import type { User } from 'firebase/auth'
 import './App.css'
 import { auth } from './firebase'
 import { BoardPage } from './pages/BoardPage'
+import { ProfilePage } from './pages/ProfilePage'
 
 type AuthMode = 'login' | 'register'
-type AppRoute = '/' | '/board'
+type AppRoute = '/' | '/board' | '/profile'
 
 const AUTH_ROUTE: AppRoute = '/'
 const BOARD_ROUTE: AppRoute = '/board'
+const PROFILE_ROUTE: AppRoute = '/profile'
 
 const getCurrentRoute = (): AppRoute => {
-  return window.location.pathname === BOARD_ROUTE ? BOARD_ROUTE : AUTH_ROUTE
+  if (window.location.pathname === BOARD_ROUTE) {
+    return BOARD_ROUTE
+  }
+
+  if (window.location.pathname === PROFILE_ROUTE) {
+    return PROFILE_ROUTE
+  }
+
+  return AUTH_ROUTE
 }
 
 const navigateTo = (route: AppRoute, replace = false) => {
@@ -65,10 +75,10 @@ function App() {
         return
       }
 
-      if (getCurrentRoute() === BOARD_ROUTE) {
+      if (getCurrentRoute() === BOARD_ROUTE || getCurrentRoute() === PROFILE_ROUTE) {
         navigateTo(AUTH_ROUTE, true)
         setRoute(AUTH_ROUTE)
-        setError('You must log in before accessing the board.')
+        setError('You must log in before accessing this page.')
       }
     })
 
@@ -318,6 +328,21 @@ function App() {
       <BoardPage
         isLoading={isLoading}
         userEmail={currentUser.email}
+        onOpenProfile={() => openRoute(PROFILE_ROUTE)}
+        onSignOut={handleSignOut}
+      />
+    )
+  }
+
+  if (route === PROFILE_ROUTE) {
+    if (!currentUser) {
+      return renderAuthPage()
+    }
+
+    return (
+      <ProfilePage
+        fallbackEmail={currentUser.email}
+        onBackToBoard={() => openRoute(BOARD_ROUTE)}
         onSignOut={handleSignOut}
       />
     )

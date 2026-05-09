@@ -13,7 +13,7 @@ public class AbstractAITutorService implements AITutorService {
                 "\n" +
                 "The hints must be progressively more specific:\n" +
                 "\n" +
-                "Hint 1 should be very general and focus on high-level evaluation or strategic ideas.\n" +
+                "Hint 1 should be very general and focus on high-level evaluation or strategic ideas, identifying weaknesses and strengths over the board.\n" +
                 "\n" +
                 "Hint 2 should narrow the focus to relevant tactical or positional themes.\n" +
                 "\n" +

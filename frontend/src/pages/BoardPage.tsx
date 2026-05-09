@@ -3,6 +3,7 @@ import { Chess } from 'chess.js'
 import type { CSSProperties } from 'react'
 import type { Square } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
+import { fetchWithAuth } from '../api/apiClient'
 
 type ChessColor = 'w' | 'b'
 type PromotionPiece = 'b' | 'n' | 'r' | 'q'
@@ -10,6 +11,7 @@ type PromotionPiece = 'b' | 'n' | 'r' | 'q'
 type BoardPageProps = {
   isLoading: boolean
   userEmail?: string | null
+  onOpenProfile: () => void
   onSignOut: () => Promise<void>
 }
 
@@ -70,7 +72,7 @@ const getPieceCode = (color: ChessColor, piece: PromotionPiece) => {
   return `${color}${piece.toUpperCase()}`
 }
 
-export function BoardPage({ isLoading, onSignOut }: BoardPageProps) {
+export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProps) {
   const [game, setGame] = useState(() => new Chess())
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
   const [puzzle, setPuzzle] = useState<PuzzleDTO | null>(null)
@@ -143,7 +145,7 @@ export function BoardPage({ isLoading, onSignOut }: BoardPageProps) {
   }
 
   const verifyPuzzleMove = async (request: VerifyPuzzleMoveRequestDTO) => {
-    const response = await fetch('http://localhost:8080/api/puzzles/verify-move', {
+    const response = await fetchWithAuth('/api/puzzles/verify-move', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -223,7 +225,7 @@ export function BoardPage({ isLoading, onSignOut }: BoardPageProps) {
     setIsPuzzleCompleted(false)
     clearSelection()
 
-    const response = await fetch('http://localhost:8080/api/puzzles/random')
+    const response = await fetchWithAuth('/api/puzzles/random')
     const nextPuzzle = (await response.json()) as PuzzleDTO
     const nextPosition = getPositionAfterInitialMove(nextPuzzle)
 
@@ -247,7 +249,7 @@ export function BoardPage({ isLoading, onSignOut }: BoardPageProps) {
     setIsHintsLoading(true)
 
     try {
-      const response = await fetch(`http://localhost:8080/api/puzzles/${puzzle.id}/hints`)
+      const response = await fetchWithAuth(`/api/puzzles/${puzzle.id}/hints`)
 
       if (!response.ok) {
         throw new Error('Unable to load puzzle hints.')
@@ -384,6 +386,9 @@ export function BoardPage({ isLoading, onSignOut }: BoardPageProps) {
           <h1>ChessAIssistant</h1>
         </div>
         <div className="board-actions">
+          <button type="button" className="secondary-action compact-action" onClick={onOpenProfile}>
+            Profile
+          </button>
           <button type="button" className="secondary-action compact-action" onClick={() => void onSignOut()} disabled={isLoading}>
             Sign out
           </button>

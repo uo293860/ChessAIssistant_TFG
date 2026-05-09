@@ -1,11 +1,16 @@
 package com.juan.tfg.config;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
+import com.juan.tfg.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -13,7 +18,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 
+@RequiredArgsConstructor
 public class FirebaseTokenFilter extends OncePerRequestFilter {
+
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseTokenFilter.class);
+
+    private final UserService userService;
+    private final FirebaseApp firebaseApp;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -21,24 +32,20 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
 
         String header = request.getHeader("Authorization");
 
-        // 1. Verificamos si la petición trae el token
         if (header != null && header.startsWith("Bearer ")) {
             String idToken = header.replace("Bearer ", "");
-            try {
-                // 2. Verificamos el token con el SDK de Firebase
-                FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
 
-                // 3. Si es válido, creamos la autenticación en el contexto de Spring
-                // Usamos el UID de Firebase como el "principal" (identificador del usuario)
+            try {
+                FirebaseToken decodedToken = FirebaseAuth.getInstance(firebaseApp).verifyIdToken(idToken);
+                userService.getOrCreateUser(decodedToken);
+
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                         decodedToken.getUid(), null, new ArrayList<>());
 
                 SecurityContextHolder.getContext().setAuthentication(auth);
-
             } catch (Exception e) {
-                // Si el token es falso o ha caducado, no hacemos nada
-                // (Spring Security lanzará el 401 automáticamente)
-                System.err.println("Error validating token: " + e.getMessage());
+                logger.warn("Error validating Firebase token.", e);
+                SecurityContextHolder.clearContext();
             }
         }
 

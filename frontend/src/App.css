@@ -10,7 +10,10 @@
 .auth-card,
 .board-header-card,
 .board-card,
-.board-panel {
+.board-panel,
+.profile-header,
+.profile-summary,
+.profile-stat {
   border: 1px solid var(--border);
   border-radius: 28px;
 }
@@ -275,7 +278,8 @@
   gap: 24px;
 }
 
-.board-header-card {
+.board-header-card,
+.profile-header {
   display: flex;
   justify-content: space-between;
   gap: 24px;
@@ -311,7 +315,9 @@
 }
 
 .board-card,
-.board-panel {
+.board-panel,
+.profile-summary,
+.profile-stat {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(242, 242, 242, 0.96));
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.12);
 }
@@ -403,14 +409,73 @@
   margin-top: 14px;
 }
 
+.profile-shell {
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 24px;
+}
+
+.profile-actions {
+  min-width: 220px;
+  display: grid;
+  gap: 12px;
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) repeat(2, minmax(220px, 0.8fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.profile-summary,
+.profile-stat {
+  padding: 20px;
+}
+
+.profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.profile-summary strong,
+.profile-stat strong {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #111111;
+  font-size: 1.4rem;
+}
+
+.profile-feedback {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+
 @media (max-width: 920px) {
   .auth-shell,
-  .board-layout {
+  .board-layout,
+  .profile-layout {
     grid-template-columns: 1fr;
   }
 
   .auth-shell,
-  .board-shell {
+  .board-shell,
+  .profile-shell {
     padding: 16px;
   }
 
@@ -428,11 +493,13 @@
     width: 100%;
   }
 
-  .board-header-card {
+  .board-header-card,
+  .profile-header {
     flex-direction: column;
   }
 
-  .board-actions {
+  .board-actions,
+  .profile-actions {
     width: 100%;
     min-width: 0;
   }

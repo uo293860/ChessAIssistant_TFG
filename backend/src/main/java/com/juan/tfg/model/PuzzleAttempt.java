@@ -27,14 +27,16 @@ public class PuzzleAttempt {
     private Puzzle puzzle;
 
     @Column(name = "is_successful", nullable = false)
-    private Boolean isSuccessful;
+    @Builder.Default
+    private Boolean isSuccessful = false;
+
+    @Column(name = "failed_attempts")
+    @Builder.Default
+    private int failedAttempts = 0;
 
     @Column(name = "hints_used")
     @Builder.Default
     private Integer hintsUsed = 0;
-
-    @Column(name = "elo_change")
-    private Integer eloChange; // Ej: +15 o -12
 
     @CreationTimestamp
     @Column(name = "attempt_date", updatable = false)
