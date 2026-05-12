@@ -4,6 +4,7 @@ public record PuzzleMoveVerificationResponseDTO(
         boolean correct,
         String opponentMove,
         int nextMoveIndex,
-        boolean puzzleCompleted
+        boolean puzzleCompleted,
+        Integer newElo
 ) {
 }

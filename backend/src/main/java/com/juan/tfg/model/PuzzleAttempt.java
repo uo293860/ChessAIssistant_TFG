@@ -38,6 +38,13 @@ public class PuzzleAttempt {
     @Builder.Default
     private Integer hintsUsed = 0;
 
+    @Column(name = "elo_change")
+    @Builder.Default
+    private Integer eloChange = 0;
+
+    @Column(name = "resulting_elo")
+    private Integer resultingElo;
+
     @CreationTimestamp
     @Column(name = "attempt_date", updatable = false)
     private LocalDateTime attemptDate;

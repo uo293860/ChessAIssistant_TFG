@@ -30,7 +30,8 @@ public class UserController {
                 user.getFirebaseUid(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getEloRating()
+                user.getEloRating(),
+                userService.getEloHistory(user.getFirebaseUid())
         );
     }
 }
