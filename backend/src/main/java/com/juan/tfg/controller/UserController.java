@@ -31,9 +31,9 @@ public class UserController {
                 user.getUsername(),
                 user.getEmail(),
                 user.getEloRating(),
-                userService.getEloHistory(user.getFirebaseUid()),
                 userService.countPuzzleAttempts(user.getFirebaseUid()),
-                userService.countSolvedPuzzles(user.getFirebaseUid())
+                userService.countSolvedPuzzles(user.getFirebaseUid()),
+                userService.getEloHistory(user.getFirebaseUid())
         );
     }
 }

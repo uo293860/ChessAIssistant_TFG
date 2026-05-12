@@ -1,5 +1,7 @@
 package com.juan.tfg.model.dto;
 
+import java.util.List;
+
 public record UserProfileDTO(
         String firebaseUid,
         String username,

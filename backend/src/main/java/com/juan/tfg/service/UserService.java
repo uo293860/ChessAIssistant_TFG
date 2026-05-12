@@ -5,9 +5,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.google.firebase.auth.UserRecord;
+import com.juan.tfg.model.PuzzleAttempt;
 import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.EloHistoryPointDTO;
-import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -28,6 +29,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final FirebaseApp firebaseApp;
+    private final PuzzleAttemptRepository puzzleAttemptRepository;
 
     @Transactional
     public User getOrCreateUser(String firebaseUid) {

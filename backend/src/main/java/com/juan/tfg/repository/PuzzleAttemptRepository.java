@@ -4,7 +4,6 @@ import com.juan.tfg.model.PuzzleAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 
@@ -18,7 +17,7 @@ public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Lo
               and attempt.resultingElo is not null
             order by attempt.attemptDate asc, attempt.id asc
             """)
-    List<PuzzleAttempt> findSuccessfulEloHistoryByUserId(String firebaseUid);
+    List<PuzzleAttempt> findSuccessfulEloHistoryByUserId(@Param("firebaseUid") String firebaseUid);
 
     @Query("select count(attempt) from PuzzleAttempt attempt where attempt.user.firebaseUid = :firebaseUid")
     long countByFirebaseUid(@Param("firebaseUid") String firebaseUid);
