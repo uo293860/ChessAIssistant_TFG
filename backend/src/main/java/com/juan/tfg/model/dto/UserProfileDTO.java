@@ -6,6 +6,7 @@ public record UserProfileDTO(
         String email,
         Integer eloRating,
         Long puzzlesAttempted,
-        Long puzzlesSolved
+        Long puzzlesSolved,
+        List<EloHistoryPointDTO> eloHistory
 ) {
 }

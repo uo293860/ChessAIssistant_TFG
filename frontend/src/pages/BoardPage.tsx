@@ -34,6 +34,8 @@ type VerifyPuzzleMoveRequestDTO = {
   puzzleId: string
   move: string
   moveIndex: number
+  hintsUsed: number
+  failedAttempts: number
 }
 
 type VerifyPuzzleMoveResponseDTO = {
@@ -41,6 +43,7 @@ type VerifyPuzzleMoveResponseDTO = {
   opponentMove: string
   nextMoveIndex: number
   puzzleCompleted: boolean
+  newElo: number | null
 }
 
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
@@ -87,6 +90,8 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const [isVerifyingMove, setIsVerifyingMove] = useState(false)
   const [isReplayingOpponentMove, setIsReplayingOpponentMove] = useState(false)
   const [currentMoveIndex, setCurrentMoveIndex] = useState(1)
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [updatedElo, setUpdatedElo] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
   const replayTimeoutRef = useRef<number | null>(null)
 
@@ -179,9 +184,12 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
         puzzleId: puzzle.id,
         move: buildUciMove(from, to, promotion),
         moveIndex: currentMoveIndex,
+        hintsUsed: revealedHintCount,
+        failedAttempts,
       })
 
       if (!verification.correct) {
+        setFailedAttempts((currentAttempts) => currentAttempts + 1)
         clearSelection()
         return false
       }
@@ -198,6 +206,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
           setGame(resolvedGame)
           setCurrentMoveIndex(verification.nextMoveIndex)
           setIsPuzzleCompleted(verification.puzzleCompleted)
+          setUpdatedElo(verification.newElo)
           setIsReplayingOpponentMove(false)
           replayTimeoutRef.current = null
         }, INITIAL_MOVE_DELAY_MS)
@@ -206,6 +215,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
 
       setCurrentMoveIndex(verification.nextMoveIndex)
       setIsPuzzleCompleted(verification.puzzleCompleted)
+      setUpdatedElo(verification.newElo)
       return true
     } finally {
       setIsVerifyingMove(false)
@@ -222,6 +232,8 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     setRevealedHintCount(0)
     setIsHintsLoading(false)
     setCurrentMoveIndex(1)
+    setFailedAttempts(0)
+    setUpdatedElo(null)
     setIsPuzzleCompleted(false)
     clearSelection()
 
@@ -440,7 +452,9 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
                 : isVerifyingMove
                   ? 'Verifying your move with the backend.'
                 : isPuzzleCompleted
-                  ? 'Puzzle solved. Load a new puzzle to continue.'
+                  ? updatedElo === null
+                    ? 'Puzzle solved. Load a new puzzle to continue.'
+                    : `Puzzle solved. Your new Elo is ${updatedElo}.`
                 : pendingPromotion
                   ? `Choose a promotion piece for ${pendingPromotion.to}.`
                   : selectedSquare

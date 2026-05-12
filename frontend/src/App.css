@@ -509,6 +509,67 @@
   font-weight: 800;
 }
 
+.profile-chart {
+  grid-column: 1 / -1;
+}
+
+.profile-chart-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.elo-delta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+
+.elo-delta.positive {
+  background: #e7f6ec;
+  color: #176c35;
+}
+
+.elo-delta.negative {
+  background: #f8e8e8;
+  color: #8a1f1f;
+}
+
+.elo-chart {
+  width: 100%;
+  min-height: 160px;
+  margin-top: 14px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d4d4d4;
+  border-radius: 18px;
+  background:
+    linear-gradient(#e5e5e5 1px, transparent 1px),
+    linear-gradient(90deg, #e5e5e5 1px, transparent 1px),
+    #ffffff;
+  background-size: 100% 33.333%, 25% 100%, auto;
+}
+
+.elo-chart svg {
+  width: 100%;
+  height: 160px;
+  display: block;
+}
+
+.elo-chart-line {
+  fill: none;
+  stroke: #111111;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 @media (max-width: 920px) {
   .auth-shell,
   .board-layout,

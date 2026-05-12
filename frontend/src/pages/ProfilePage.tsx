@@ -42,6 +42,41 @@ function SuccessRateDonut({ solved, failed }: SuccessRateDonutProps) {
       </div>
     </div>
   )
+  eloHistory: EloHistoryPointDTO[]
+}
+
+type EloHistoryPointDTO = {
+  attemptId: number
+  attemptDate: string
+  puzzleRating: number
+  eloChange: number
+  resultingElo: number
+}
+
+const CHART_WIDTH = 320
+const CHART_HEIGHT = 140
+const CHART_PADDING = 18
+
+const buildEloChartPolyline = (history: EloHistoryPointDTO[]) => {
+  if (history.length === 0) {
+    return ''
+  }
+
+  const ratings = history.map((point) => point.resultingElo)
+  const minRating = Math.min(...ratings)
+  const maxRating = Math.max(...ratings)
+  const ratingRange = Math.max(1, maxRating - minRating)
+  const innerWidth = CHART_WIDTH - CHART_PADDING * 2
+  const innerHeight = CHART_HEIGHT - CHART_PADDING * 2
+  const stepCount = Math.max(1, history.length - 1)
+
+  return history
+    .map((point, index) => {
+      const x = CHART_PADDING + (innerWidth * index) / stepCount
+      const y = CHART_PADDING + innerHeight - ((point.resultingElo - minRating) / ratingRange) * innerHeight
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    .join(' ')
 }
 
 export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: ProfilePageProps) {
@@ -75,9 +110,6 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
   const username = profile?.username ?? fallbackEmail?.split('@')[0] ?? 'Player'
   const email = profile?.email ?? fallbackEmail ?? 'No email available'
   const eloRating = profile?.eloRating ?? 1000
-  const puzzlesAttempted = Math.max(profile?.puzzlesAttempted ?? 0, 0)
-  const puzzlesSolved = Math.min(Math.max(profile?.puzzlesSolved ?? 0, 0), puzzlesAttempted)
-  const puzzlesFailed = Math.max(puzzlesAttempted - puzzlesSolved, 0)
 
   return (
     <main className="profile-shell">
@@ -115,15 +147,6 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
         <div className="profile-stat">
           <p className="panel-title">Email</p>
           <strong>{email}</strong>
-        </div>
-
-        <div className="profile-stat success-rate-stat">
-          <p className="panel-title">Success Rate</p>
-          {isProfileLoading ? (
-            <strong>Loading...</strong>
-          ) : (
-            <SuccessRateDonut solved={puzzlesSolved} failed={puzzlesFailed} />
-          )}
         </div>
 
         {error ? <p className="feedback error profile-feedback">{error}</p> : null}
