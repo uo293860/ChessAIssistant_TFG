@@ -14,6 +14,7 @@ public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Lo
             from PuzzleAttempt attempt
             where attempt.user.firebaseUid = :firebaseUid
               and attempt.isSuccessful = true
+              and attempt.failedAttempts = 0
               and attempt.resultingElo is not null
             order by attempt.attemptDate asc, attempt.id asc
             """)
@@ -27,6 +28,7 @@ public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Lo
             from PuzzleAttempt attempt
             where attempt.user.firebaseUid = :firebaseUid
             and attempt.isSuccessful = true
+            and attempt.failedAttempts = 0
             """)
     long countSuccessfulByFirebaseUid(@Param("firebaseUid") String firebaseUid);
 }

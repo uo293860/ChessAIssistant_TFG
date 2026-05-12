@@ -111,7 +111,7 @@ public class PuzzleService {
 
         boolean correct = expectedMove.equals(normalizedMove);
         Integer newElo = correct && puzzleCompleted
-                ? saveSolvedAttemptAndUpdateUserElo(firebaseUid, puzzle, hintsUsed, failedAttempts)
+                ? saveCompletedAttemptAndUpdateUserElo(firebaseUid, puzzle, hintsUsed, failedAttempts)
                 : null;
 
         return new PuzzleMoveVerificationResponseDTO(
@@ -123,7 +123,7 @@ public class PuzzleService {
         );
     }
 
-    private int saveSolvedAttemptAndUpdateUserElo(String firebaseUid, Puzzle puzzle, int hintsUsed, int failedAttempts) {
+    private int saveCompletedAttemptAndUpdateUserElo(String firebaseUid, Puzzle puzzle, int hintsUsed, int failedAttempts) {
         User user = userRepository.findById(firebaseUid)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user was not found."));
 
@@ -134,7 +134,7 @@ public class PuzzleService {
         PuzzleAttempt puzzleAttempt = PuzzleAttempt.builder()
                 .user(user)
                 .puzzle(puzzle)
-                .isSuccessful(true)
+                .isSuccessful(failedAttempts == 0)
                 .hintsUsed(hintsUsed)
                 .failedAttempts(failedAttempts)
                 .eloChange(eloChange)

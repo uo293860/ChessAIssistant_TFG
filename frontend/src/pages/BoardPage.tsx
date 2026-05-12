@@ -48,6 +48,7 @@ type VerifyPuzzleMoveResponseDTO = {
 
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
 const INITIAL_MOVE_DELAY_MS = 1200
+const INCORRECT_MOVE_FEEDBACK_MS = 650
 const lightSquareColor = '#f0f0f0'
 const darkSquareColor = '#8f8f8f'
 
@@ -75,6 +76,13 @@ const getPieceCode = (color: ChessColor, piece: PromotionPiece) => {
   return `${color}${piece.toUpperCase()}`
 }
 
+const getSquareColor = (square: Square) => {
+  const fileIndex = square.charCodeAt(0) - 'a'.charCodeAt(0)
+  const rank = Number(square[1])
+
+  return (fileIndex + rank) % 2 === 0 ? lightSquareColor : darkSquareColor
+}
+
 export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProps) {
   const [game, setGame] = useState(() => new Chess())
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
@@ -93,7 +101,9 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [updatedElo, setUpdatedElo] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
+  const [incorrectMoveSquare, setIncorrectMoveSquare] = useState<Square | null>(null)
   const replayTimeoutRef = useRef<number | null>(null)
+  const incorrectMoveTimeoutRef = useRef<number | null>(null)
 
   const clearSelection = () => {
     setSelectedSquare(null)
@@ -106,6 +116,26 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       window.clearTimeout(replayTimeoutRef.current)
       replayTimeoutRef.current = null
     }
+  }
+
+  const clearIncorrectMoveTimeout = () => {
+    if (incorrectMoveTimeoutRef.current !== null) {
+      window.clearTimeout(incorrectMoveTimeoutRef.current)
+      incorrectMoveTimeoutRef.current = null
+    }
+  }
+
+  const showIncorrectMoveFeedback = (square: Square) => {
+    clearIncorrectMoveTimeout()
+    setIncorrectMoveSquare(square)
+
+    return new Promise<void>((resolve) => {
+      incorrectMoveTimeoutRef.current = window.setTimeout(() => {
+        setIncorrectMoveSquare(null)
+        incorrectMoveTimeoutRef.current = null
+        resolve()
+      }, INCORRECT_MOVE_FEEDBACK_MS)
+    })
   }
 
   const getPositionAfterInitialMove = (nextPuzzle: PuzzleDTO) => {
@@ -174,9 +204,12 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     const moveResult = nextGame.move({ from, to, promotion })
 
     if (!moveResult) {
+      void showIncorrectMoveFeedback(to)
       return false
     }
 
+    const previousGame = new Chess(game.fen())
+    setGame(nextGame)
     setIsVerifyingMove(true)
 
     try {
@@ -191,10 +224,11 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       if (!verification.correct) {
         setFailedAttempts((currentAttempts) => currentAttempts + 1)
         clearSelection()
+        await showIncorrectMoveFeedback(to)
+        setGame(previousGame)
         return false
       }
 
-      setGame(nextGame)
       clearSelection()
 
       if (verification.opponentMove) {
@@ -217,6 +251,11 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       setIsPuzzleCompleted(verification.puzzleCompleted)
       setUpdatedElo(verification.newElo)
       return true
+    } catch {
+      clearSelection()
+      await showIncorrectMoveFeedback(to)
+      setGame(previousGame)
+      return false
     } finally {
       setIsVerifyingMove(false)
     }
@@ -224,10 +263,12 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
 
   const loadRandomPuzzle = async () => {
     clearReplayTimeout()
+    clearIncorrectMoveTimeout()
     setIsPuzzleLoading(true)
     setIsReplayingInitialMove(false)
     setIsReplayingOpponentMove(false)
     setIsVerifyingMove(false)
+    setIncorrectMoveSquare(null)
     setPuzzleHints([])
     setRevealedHintCount(0)
     setIsHintsLoading(false)
@@ -282,7 +323,10 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
 
   useEffect(() => {
     void loadRandomPuzzle()
-    return () => clearReplayTimeout()
+    return () => {
+      clearReplayTimeout()
+      clearIncorrectMoveTimeout()
+    }
   }, [])
 
   const handlePromotionChoice = (promotion: PromotionPiece) => {
@@ -348,6 +392,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     const matchingMoves = game.moves({ square: from, verbose: true }).filter((move) => move.to === to)
 
     if (matchingMoves.length === 0) {
+      void showIncorrectMoveFeedback(to)
       return false
     }
 
@@ -383,6 +428,18 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       ...(squareStyles[target] ?? {}),
       background:
         'radial-gradient(circle, rgba(17, 17, 17, 0.22) 0%, rgba(17, 17, 17, 0.22) 18%, transparent 20%)',
+    }
+  }
+
+  if (incorrectMoveSquare) {
+    squareStyles[incorrectMoveSquare] = {
+      ...(squareStyles[incorrectMoveSquare] ?? {}),
+      background:
+        'linear-gradient(45deg, transparent 43%, rgba(220, 38, 38, 0.95) 44%, rgba(220, 38, 38, 0.95) 56%, transparent 57%), linear-gradient(-45deg, transparent 43%, rgba(220, 38, 38, 0.95) 44%, rgba(220, 38, 38, 0.95) 56%, transparent 57%)',
+      backgroundColor: getSquareColor(incorrectMoveSquare),
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundSize: '34% 34%',
     }
   }
 
@@ -452,9 +509,13 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
                 : isVerifyingMove
                   ? 'Verifying your move with the backend.'
                 : isPuzzleCompleted
-                  ? updatedElo === null
-                    ? 'Puzzle solved. Load a new puzzle to continue.'
-                    : `Puzzle solved. Your new Elo is ${updatedElo}.`
+                  ? failedAttempts > 0
+                    ? updatedElo === null
+                      ? 'Puzzle completed with mistakes. It will count as unsolved.'
+                      : `Puzzle completed with mistakes. It will count as unsolved. Your new Elo is ${updatedElo}.`
+                    : updatedElo === null
+                      ? 'Puzzle solved. Load a new puzzle to continue.'
+                      : `Puzzle solved. Your new Elo is ${updatedElo}.`
                 : pendingPromotion
                   ? `Choose a promotion piece for ${pendingPromotion.to}.`
                   : selectedSquare

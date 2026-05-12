@@ -10,7 +10,7 @@ public class EloService {
 
     // Penalizaciones
     private static final double PENALTY_PER_HINT = 0.25;
-    private static final double PENALTY_PER_ERROR = 0.10;
+    private static final double PENALTY_PER_ERROR = 0.50;
 
     /**
      * Calcula el nuevo ELO del jugador tras terminar un puzle.

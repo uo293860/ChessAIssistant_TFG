@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { fetchWithAuth } from '../api/apiClient'
 
 type ProfilePageProps = {
@@ -31,6 +32,12 @@ type SuccessRateDonutProps = {
   failed: number
 }
 
+type EloChartPoint = {
+  attemptId: number
+  solvedPuzzle: number
+  elo: number
+}
+
 function SuccessRateDonut({ solved, failed }: SuccessRateDonutProps) {
   const totalAttempts = Math.max(solved + failed, 0)
   const solvedPercent = totalAttempts > 0 ? (solved / totalAttempts) * 100 : 0
@@ -53,30 +60,12 @@ function SuccessRateDonut({ solved, failed }: SuccessRateDonutProps) {
   )
 }
 
-const CHART_WIDTH = 320
-const CHART_HEIGHT = 140
-const CHART_PADDING = 18
-
-const buildEloChartPolyline = (history: EloHistoryPointDTO[]) => {
-  if (history.length === 0) {
-    return ''
-  }
-
-  const ratings = history.map((point) => point.resultingElo)
-  const minRating = Math.min(...ratings)
-  const maxRating = Math.max(...ratings)
-  const ratingRange = Math.max(1, maxRating - minRating)
-  const innerWidth = CHART_WIDTH - CHART_PADDING * 2
-  const innerHeight = CHART_HEIGHT - CHART_PADDING * 2
-  const stepCount = Math.max(1, history.length - 1)
-
-  return history
-    .map((point, index) => {
-      const x = CHART_PADDING + (innerWidth * index) / stepCount
-      const y = CHART_PADDING + innerHeight - ((point.resultingElo - minRating) / ratingRange) * innerHeight
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-    .join(' ')
+const buildEloChartData = (history: EloHistoryPointDTO[]): EloChartPoint[] => {
+  return history.map((point, index) => ({
+    attemptId: point.attemptId,
+    solvedPuzzle: index + 1,
+    elo: point.resultingElo,
+  }))
 }
 
 export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: ProfilePageProps) {
@@ -114,7 +103,7 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
   const puzzlesSolved = Math.min(Math.max(profile?.puzzlesSolved ?? 0, 0), puzzlesAttempted)
   const puzzlesFailed = Math.max(puzzlesAttempted - puzzlesSolved, 0)
   const eloHistory = profile?.eloHistory ?? []
-  const eloChartPolyline = buildEloChartPolyline(eloHistory)
+  const eloChartData = buildEloChartData(eloHistory)
   const latestEloChange = eloHistory.at(-1)?.eloChange ?? 0
 
   return (
@@ -180,10 +169,33 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
           <div className="elo-chart">
             {isProfileLoading ? (
               <span>Loading chart...</span>
-            ) : eloChartPolyline ? (
-              <svg viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} role="img" aria-label="Elo rating history">
-                <polyline className="elo-chart-line" points={eloChartPolyline} />
-              </svg>
+            ) : eloChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={eloChartData} margin={{ top: 12, right: 8, bottom: 8, left: 0 }}>
+                  <CartesianGrid stroke="#e5e5e5" vertical={false} />
+                  <XAxis dataKey="solvedPuzzle" hide />
+                  <YAxis
+                    dataKey="elo"
+                    axisLine={{ stroke: '#6a6a6a', strokeWidth: 1.5 }}
+                    tickLine={{ stroke: '#6a6a6a', strokeWidth: 1.5 }}
+                    tick={{ fill: '#4c4c4c', fontSize: 12, fontWeight: 800 }}
+                    width={56}
+                    domain={['dataMin - 10', 'dataMax + 10']}
+                  />
+                  <Tooltip
+                    labelFormatter={(value) => `Solved puzzle ${value}`}
+                    formatter={(value) => [value, 'Elo']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="elo"
+                    stroke="#111111"
+                    strokeWidth={4}
+                    dot={{ r: 4, fill: '#111111', strokeWidth: 0 }}
+                    activeDot={{ r: 6, fill: '#111111', strokeWidth: 0 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
             ) : (
               <span>No solved puzzles yet.</span>
             )}
