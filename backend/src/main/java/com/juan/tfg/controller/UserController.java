@@ -30,7 +30,9 @@ public class UserController {
                 user.getFirebaseUid(),
                 user.getUsername(),
                 user.getEmail(),
-                user.getEloRating()
+                user.getEloRating(),
+                userService.countPuzzleAttempts(user.getFirebaseUid()),
+                userService.countSolvedPuzzles(user.getFirebaseUid())
         );
     }
 }

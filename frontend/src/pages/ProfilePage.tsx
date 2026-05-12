@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { fetchWithAuth } from '../api/apiClient'
 
 type ProfilePageProps = {
@@ -12,6 +13,35 @@ type UserProfileDTO = {
   username: string
   email: string
   eloRating: number
+  puzzlesAttempted: number
+  puzzlesSolved: number
+}
+
+type SuccessRateDonutProps = {
+  solved: number
+  failed: number
+}
+
+function SuccessRateDonut({ solved, failed }: SuccessRateDonutProps) {
+  const totalAttempts = Math.max(solved + failed, 0)
+  const solvedPercent = totalAttempts > 0 ? (solved / totalAttempts) * 100 : 0
+  const chartStyle = {
+    '--success-rate': `${solvedPercent}%`,
+  } as CSSProperties
+
+  return (
+    <div
+      className={`success-rate-donut ${totalAttempts === 0 ? 'empty' : ''}`}
+      style={chartStyle}
+      role="img"
+      aria-label={`${solved} wins and ${failed} losses`}
+    >
+      <div className="success-rate-center">
+        <strong>{solved} W</strong>
+        <span>{failed} L</span>
+      </div>
+    </div>
+  )
 }
 
 export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: ProfilePageProps) {
@@ -45,6 +75,9 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
   const username = profile?.username ?? fallbackEmail?.split('@')[0] ?? 'Player'
   const email = profile?.email ?? fallbackEmail ?? 'No email available'
   const eloRating = profile?.eloRating ?? 1000
+  const puzzlesAttempted = Math.max(profile?.puzzlesAttempted ?? 0, 0)
+  const puzzlesSolved = Math.min(Math.max(profile?.puzzlesSolved ?? 0, 0), puzzlesAttempted)
+  const puzzlesFailed = Math.max(puzzlesAttempted - puzzlesSolved, 0)
 
   return (
     <main className="profile-shell">
@@ -82,6 +115,15 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
         <div className="profile-stat">
           <p className="panel-title">Email</p>
           <strong>{email}</strong>
+        </div>
+
+        <div className="profile-stat success-rate-stat">
+          <p className="panel-title">Success Rate</p>
+          {isProfileLoading ? (
+            <strong>Loading...</strong>
+          ) : (
+            <SuccessRateDonut solved={puzzlesSolved} failed={puzzlesFailed} />
+          )}
         </div>
 
         {error ? <p className="feedback error profile-feedback">{error}</p> : null}

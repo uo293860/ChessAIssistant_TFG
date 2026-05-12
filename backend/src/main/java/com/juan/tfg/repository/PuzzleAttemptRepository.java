@@ -2,6 +2,19 @@ package com.juan.tfg.repository;
 
 import com.juan.tfg.model.PuzzleAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Long> {
+
+    @Query("select count(attempt) from PuzzleAttempt attempt where attempt.user.firebaseUid = :firebaseUid")
+    long countByFirebaseUid(@Param("firebaseUid") String firebaseUid);
+
+    @Query("""
+            select count(attempt)
+            from PuzzleAttempt attempt
+            where attempt.user.firebaseUid = :firebaseUid
+            and attempt.isSuccessful = true
+            """)
+    long countSuccessfulByFirebaseUid(@Param("firebaseUid") String firebaseUid);
 }

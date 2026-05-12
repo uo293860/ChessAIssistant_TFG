@@ -4,6 +4,8 @@ public record UserProfileDTO(
         String firebaseUid,
         String username,
         String email,
-        Integer eloRating
+        Integer eloRating,
+        Long puzzlesAttempted,
+        Long puzzlesSolved
 ) {
 }

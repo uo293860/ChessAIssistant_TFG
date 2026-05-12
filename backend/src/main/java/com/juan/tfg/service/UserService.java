@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.google.firebase.auth.UserRecord;
 import com.juan.tfg.model.User;
+import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ public class UserService {
     private static final int MAX_USERNAME_LENGTH = 50;
 
     private final UserRepository userRepository;
+    private final PuzzleAttemptRepository puzzleAttemptRepository;
     private final FirebaseApp firebaseApp;
 
     @Transactional
@@ -42,6 +44,16 @@ public class UserService {
         String email = resolveEmail(firebaseToken.getEmail(), firebaseToken.getUid());
         String username = resolveUniqueUsername(firebaseToken.getName(), email, firebaseToken.getUid());
         return saveNewUser(firebaseToken.getUid(), email, username);
+    }
+
+    @Transactional(readOnly = true)
+    public long countPuzzleAttempts(String firebaseUid) {
+        return puzzleAttemptRepository.countByFirebaseUid(firebaseUid);
+    }
+
+    @Transactional(readOnly = true)
+    public long countSolvedPuzzles(String firebaseUid) {
+        return puzzleAttemptRepository.countSuccessfulByFirebaseUid(firebaseUid);
     }
 
     private User createUserFromFirebase(String firebaseUid) {
