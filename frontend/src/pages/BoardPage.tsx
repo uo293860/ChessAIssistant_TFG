@@ -501,6 +501,9 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
           <div className="board-panel">
             <p className="panel-title">Game state</p>
             <strong>{isPuzzleLoading ? 'Loading puzzle...' : getStatusMessage(game)}</strong>
+            <p className="puzzle-rating">
+              {isPuzzleLoading || !puzzle ? 'Puzzle Elo loading...' : `Puzzle Elo: ${puzzle.rating}`}
+            </p>
             <p className="panel-copy">
               {isReplayingInitialMove
                 ? `Showing the starting position. The opponent move ${puzzle?.initialMove ?? ''} will play in a moment.`

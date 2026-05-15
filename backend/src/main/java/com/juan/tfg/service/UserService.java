@@ -51,7 +51,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public List<EloHistoryPointDTO> getEloHistory(String firebaseUid) {
-        return puzzleAttemptRepository.findSuccessfulEloHistoryByUserId(firebaseUid).stream()
+        return puzzleAttemptRepository.findEloHistoryByUserId(firebaseUid).stream()
                 .map(this::toEloHistoryPointDTO)
                 .toList();
     }

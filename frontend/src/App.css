@@ -274,9 +274,10 @@
 
 .board-shell {
   min-height: 100vh;
-  padding: 24px;
+  padding: 18px 24px 24px;
   display: grid;
-  gap: 24px;
+  align-content: start;
+  gap: 16px;
 }
 
 .board-header-card,
@@ -293,15 +294,34 @@
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.45);
 }
 
+.board-header-card {
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 20px;
+}
+
+.board-header-card h1 {
+  margin-bottom: 0;
+  font-size: clamp(1.45rem, 3vw, 2.25rem);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
 .board-copy {
   max-width: 42rem;
   margin-bottom: 0;
 }
 
 .board-actions {
-  min-width: 220px;
-  display: grid;
-  gap: 12px;
+  min-width: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.board-actions .compact-action {
+  width: auto;
+  min-width: 104px;
+  padding: 10px 14px;
 }
 
 .compact-action {
@@ -310,8 +330,8 @@
 
 .board-layout {
   display: grid;
-  grid-template-columns: minmax(0, 820px) minmax(280px, 360px);
-  gap: 24px;
+  grid-template-columns: minmax(0, 760px) minmax(280px, 360px);
+  gap: 20px;
   align-items: start;
 }
 
@@ -324,7 +344,7 @@
 }
 
 .board-card {
-  padding: 20px;
+  padding: 16px;
 }
 
 .board-sidebar {
@@ -342,10 +362,22 @@
 }
 
 .panel-copy,
+.puzzle-rating,
 .moves-output,
 .fen-output {
   margin: 10px 0 0;
   color: #4c4c4c;
+}
+
+.puzzle-rating {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e8e8e8;
+  color: #111111;
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .fen-output,
@@ -365,8 +397,8 @@
 }
 
 .board-frame {
-  padding: 12px;
-  border-radius: 28px;
+  padding: 10px;
+  border-radius: 24px;
   background:
     radial-gradient(circle at top, rgba(255, 255, 255, 0.6), transparent 38%),
     linear-gradient(180deg, #1b1b1b 0%, #080808 100%);
@@ -426,9 +458,35 @@
 
 .profile-layout {
   display: grid;
-  grid-template-columns: minmax(260px, 1.2fr) repeat(3, minmax(220px, 0.8fr));
+  gap: 24px;
+}
+
+.profile-section {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-section h2 {
+  margin: 0;
+  color: #111111;
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-section-grid {
+  display: grid;
   gap: 16px;
   align-items: stretch;
+}
+
+.personal-data-grid {
+  grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 0.9fr);
+}
+
+.game-data-grid {
+  grid-template-columns: minmax(220px, 0.8fr) minmax(220px, 0.8fr);
 }
 
 .profile-summary,
@@ -463,7 +521,6 @@
 }
 
 .profile-feedback {
-  grid-column: 1 / -1;
   margin-top: 0;
 }
 
@@ -474,39 +531,39 @@
 }
 
 .success-rate-donut {
-  --success-rate: 0%;
   width: 132px;
   aspect-ratio: 1;
-  display: grid;
-  place-items: center;
+  position: relative;
   border-radius: 50%;
-  background:
-    radial-gradient(circle, #111111 0 48%, transparent 49%),
-    conic-gradient(#1f9d55 0 var(--success-rate), #dc2626 var(--success-rate) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 18px 34px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+
+.success-rate-donut.empty {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
     0 18px 34px rgba(0, 0, 0, 0.22);
 }
 
-.success-rate-donut.empty {
-  background:
-    radial-gradient(circle, #111111 0 48%, transparent 49%),
-    conic-gradient(#3a3a3a 0 100%);
-}
-
 .success-rate-center {
+  position: absolute;
+  inset: 30%;
   display: grid;
   place-items: center;
-  gap: 2px;
   color: #f5f5f5;
-  line-height: 1.05;
+  line-height: 1;
+  border-radius: 50%;
+  background: #111111;
+  pointer-events: none;
 }
 
-.success-rate-center strong,
-.success-rate-center span {
+.success-rate-center strong {
   color: inherit;
-  font-size: 1rem;
+  font-size: 1.35rem;
   font-weight: 800;
+  text-align: center;
 }
 
 .profile-chart {
@@ -574,7 +631,8 @@
 @media (max-width: 920px) {
   .auth-shell,
   .board-layout,
-  .profile-layout {
+  .personal-data-grid,
+  .game-data-grid {
     grid-template-columns: 1fr;
   }
 
@@ -607,6 +665,14 @@
   .profile-actions {
     width: 100%;
     min-width: 0;
+  }
+
+  .board-actions {
+    display: grid;
+  }
+
+  .board-actions .compact-action {
+    width: 100%;
   }
 
 }

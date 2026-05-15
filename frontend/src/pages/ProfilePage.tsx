@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { fetchWithAuth } from '../api/apiClient'
 
 type ProfilePageProps = {
@@ -34,27 +33,54 @@ type SuccessRateDonutProps = {
 
 type EloChartPoint = {
   attemptId: number
-  solvedPuzzle: number
+  attemptNumber: number
   elo: number
+}
+
+type SuccessRateChartPoint = {
+  name: string
+  value: number
+  color: string
 }
 
 function SuccessRateDonut({ solved, failed }: SuccessRateDonutProps) {
   const totalAttempts = Math.max(solved + failed, 0)
   const solvedPercent = totalAttempts > 0 ? (solved / totalAttempts) * 100 : 0
-  const chartStyle = {
-    '--success-rate': `${solvedPercent}%`,
-  } as CSSProperties
+  const roundedSolvedPercent = Math.round(solvedPercent)
+  const chartData: SuccessRateChartPoint[] = totalAttempts > 0
+    ? [
+        { name: 'Solved', value: solved, color: '#1f9d55' },
+        { name: 'Failed', value: failed, color: '#dc2626' },
+      ]
+    : [{ name: 'No attempts', value: 1, color: '#3a3a3a' }]
 
   return (
     <div
       className={`success-rate-donut ${totalAttempts === 0 ? 'empty' : ''}`}
-      style={chartStyle}
       role="img"
-      aria-label={`${solved} wins and ${failed} losses`}
+      aria-label={`${roundedSolvedPercent}% success rate`}
     >
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
+            innerRadius="58%"
+            outerRadius="100%"
+            startAngle={90}
+            endAngle={-270}
+            stroke="none"
+            isAnimationActive={false}
+          >
+            {chartData.map((entry) => (
+              <Cell key={entry.name} fill={entry.color} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ResponsiveContainer>
       <div className="success-rate-center">
-        <strong>{solved} W</strong>
-        <span>{failed} L</span>
+        <strong>{roundedSolvedPercent}%</strong>
       </div>
     </div>
   )
@@ -63,7 +89,7 @@ function SuccessRateDonut({ solved, failed }: SuccessRateDonutProps) {
 const buildEloChartData = (history: EloHistoryPointDTO[]): EloChartPoint[] => {
   return history.map((point, index) => ({
     attemptId: point.attemptId,
-    solvedPuzzle: index + 1,
+    attemptNumber: index + 1,
     elo: point.resultingElo,
   }))
 }
@@ -124,83 +150,93 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
       </section>
 
       <section className="profile-layout">
-        <div className="profile-summary">
-          <span className="profile-avatar" aria-hidden="true">
-            {username.slice(0, 1).toUpperCase()}
-          </span>
-          <div>
-            <p className="panel-title">Username</p>
-            <strong>{username}</strong>
-          </div>
-        </div>
-
-        <div className="profile-stat">
-          <p className="panel-title">Elo rating</p>
-          <strong>{isProfileLoading ? 'Loading...' : eloRating}</strong>
-        </div>
-
-        <div className="profile-stat">
-          <p className="panel-title">Email</p>
-          <strong>{email}</strong>
-        </div>
-
-        <div className="profile-stat success-rate-stat">
-          <p className="panel-title">Success Rate</p>
-          {isProfileLoading ? (
-            <strong>Loading...</strong>
-          ) : (
-            <SuccessRateDonut solved={puzzlesSolved} failed={puzzlesFailed} />
-          )}
-        </div>
-
-        <div className="profile-stat profile-chart">
-          <div className="profile-chart-header">
-            <div>
-              <p className="panel-title">Elo trend</p>
-              <strong>{isProfileLoading ? 'Loading...' : `${eloHistory.length} solved puzzles`}</strong>
-            </div>
-            {!isProfileLoading && eloHistory.length > 0 ? (
-              <span className={`elo-delta ${latestEloChange >= 0 ? 'positive' : 'negative'}`}>
-                {latestEloChange >= 0 ? `+${latestEloChange}` : latestEloChange}
+        <section className="profile-section" aria-labelledby="personal-data-title">
+          <h2 id="personal-data-title">Personal data</h2>
+          <div className="profile-section-grid personal-data-grid">
+            <div className="profile-summary">
+              <span className="profile-avatar" aria-hidden="true">
+                {username.slice(0, 1).toUpperCase()}
               </span>
-            ) : null}
-          </div>
+              <div>
+                <p className="panel-title">Username</p>
+                <strong>{username}</strong>
+              </div>
+            </div>
 
-          <div className="elo-chart">
-            {isProfileLoading ? (
-              <span>Loading chart...</span>
-            ) : eloChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={eloChartData} margin={{ top: 12, right: 8, bottom: 8, left: 0 }}>
-                  <CartesianGrid stroke="#e5e5e5" vertical={false} />
-                  <XAxis dataKey="solvedPuzzle" hide />
-                  <YAxis
-                    dataKey="elo"
-                    axisLine={{ stroke: '#6a6a6a', strokeWidth: 1.5 }}
-                    tickLine={{ stroke: '#6a6a6a', strokeWidth: 1.5 }}
-                    tick={{ fill: '#4c4c4c', fontSize: 12, fontWeight: 800 }}
-                    width={56}
-                    domain={['dataMin - 10', 'dataMax + 10']}
-                  />
-                  <Tooltip
-                    labelFormatter={(value) => `Solved puzzle ${value}`}
-                    formatter={(value) => [value, 'Elo']}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="elo"
-                    stroke="#111111"
-                    strokeWidth={4}
-                    dot={{ r: 4, fill: '#111111', strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: '#111111', strokeWidth: 0 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <span>No solved puzzles yet.</span>
-            )}
+            <div className="profile-stat">
+              <p className="panel-title">Email</p>
+              <strong>{email}</strong>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section className="profile-section" aria-labelledby="game-data-title">
+          <h2 id="game-data-title">Game data</h2>
+          <div className="profile-section-grid game-data-grid">
+            <div className="profile-stat">
+              <p className="panel-title">Elo rating</p>
+              <strong>{isProfileLoading ? 'Loading...' : eloRating}</strong>
+            </div>
+
+            <div className="profile-stat success-rate-stat">
+              <p className="panel-title">Success Rate</p>
+              {isProfileLoading ? (
+                <strong>Loading...</strong>
+              ) : (
+                <SuccessRateDonut solved={puzzlesSolved} failed={puzzlesFailed} />
+              )}
+            </div>
+
+            <div className="profile-stat profile-chart">
+              <div className="profile-chart-header">
+                <div>
+                  <p className="panel-title">Elo trend</p>
+                  <strong>{isProfileLoading ? 'Loading...' : `${eloHistory.length} puzzle attempts`}</strong>
+                </div>
+                {!isProfileLoading && eloHistory.length > 0 ? (
+                  <span className={`elo-delta ${latestEloChange >= 0 ? 'positive' : 'negative'}`}>
+                    {latestEloChange >= 0 ? `+${latestEloChange}` : latestEloChange}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="elo-chart">
+                {isProfileLoading ? (
+                  <span>Loading chart...</span>
+                ) : eloChartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={eloChartData} margin={{ top: 12, right: 8, bottom: 8, left: 0 }}>
+                      <CartesianGrid stroke="#e5e5e5" vertical={false} />
+                      <XAxis dataKey="attemptNumber" hide />
+                      <YAxis
+                        dataKey="elo"
+                        axisLine={{ stroke: '#6a6a6a', strokeWidth: 1.5 }}
+                        tickLine={{ stroke: '#6a6a6a', strokeWidth: 1.5 }}
+                        tick={{ fill: '#4c4c4c', fontSize: 12, fontWeight: 800 }}
+                        width={56}
+                        domain={['dataMin - 10', 'dataMax + 10']}
+                      />
+                      <Tooltip
+                        labelFormatter={(value) => `Puzzle attempt ${value}`}
+                        formatter={(value) => [value, 'Elo']}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="elo"
+                        stroke="#111111"
+                        strokeWidth={4}
+                        dot={{ r: 4, fill: '#111111', strokeWidth: 0 }}
+                        activeDot={{ r: 6, fill: '#111111', strokeWidth: 0 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <span>No puzzle attempts yet.</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
 
         {error ? <p className="feedback error profile-feedback">{error}</p> : null}
       </section>
