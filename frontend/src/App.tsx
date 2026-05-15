@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
@@ -9,6 +9,7 @@ import {
   signOut,
 } from 'firebase/auth'
 import type { User } from 'firebase/auth'
+import { FirebaseError } from 'firebase/app'
 import './App.css'
 import { auth } from './firebase'
 import { BoardPage } from './pages/BoardPage'
@@ -20,6 +21,40 @@ type AppRoute = '/' | '/board' | '/profile'
 const AUTH_ROUTE: AppRoute = '/'
 const BOARD_ROUTE: AppRoute = '/board'
 const PROFILE_ROUTE: AppRoute = '/profile'
+const MIN_PASSWORD_LENGTH = 6
+
+const getFirebaseAuthErrorMessage = (firebaseError: unknown, fallbackMessage: string) => {
+  if (!(firebaseError instanceof FirebaseError)) {
+    return fallbackMessage
+  }
+
+  switch (firebaseError.code) {
+    case 'auth/email-already-in-use':
+      return 'An account already exists with this email. Sign in instead or use a different email address.'
+    case 'auth/invalid-email':
+      return 'Enter a valid email address.'
+    case 'auth/invalid-credential':
+    case 'auth/user-not-found':
+    case 'auth/wrong-password':
+      return 'The email or password is incorrect. Check your details and try again.'
+    case 'auth/popup-closed-by-user':
+      return 'Google sign-in was closed before it finished.'
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.'
+    case 'auth/account-exists-with-different-credential':
+      return 'This email is already linked to a different sign-in method. Use the method you used before.'
+    case 'auth/network-request-failed':
+      return 'We could not reach the sign-in service. Check your connection and try again.'
+    case 'auth/too-many-requests':
+      return 'Access is temporarily limited after several failed attempts. Wait a moment and try again.'
+    case 'auth/weak-password':
+      return `Use a password with at least ${MIN_PASSWORD_LENGTH} characters.`
+    case 'auth/operation-not-allowed':
+      return 'This sign-in method is not enabled yet. Contact support if the problem continues.'
+    default:
+      return fallbackMessage
+  }
+}
 
 const getCurrentRoute = (): AppRoute => {
   if (window.location.pathname === BOARD_ROUTE) {
@@ -43,7 +78,7 @@ const navigateTo = (route: AppRoute, replace = false) => {
 }
 
 function App() {
-  const googleProvider = new GoogleAuthProvider()
+  const googleProvider = useMemo(() => new GoogleAuthProvider(), [])
   const [mode, setMode] = useState<AuthMode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -106,8 +141,20 @@ function App() {
     event.preventDefault()
     resetMessages()
 
+    const normalizedEmail = email.trim()
+
+    if (!normalizedEmail) {
+      setError('Enter the email address linked to your account.')
+      return
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Use a password with at least ${MIN_PASSWORD_LENGTH} characters.`)
+      return
+    }
+
     if (mode === 'register' && password !== confirmPassword) {
-      setError('Passwords do not match.')
+      setError('The passwords do not match. Enter the same password in both fields.')
       return
     }
 
@@ -115,22 +162,18 @@ function App() {
 
     try {
       if (mode === 'register') {
-        const credential = await createUserWithEmailAndPassword(auth, email, password)
-        setFeedback(`Account created for ${credential.user.email ?? email}. Redirecting to the board...`)
+        await createUserWithEmailAndPassword(auth, normalizedEmail, password)
+        setFeedback('Account created. Opening your training board.')
       } else {
-        const credential = await signInWithEmailAndPassword(auth, email, password)
-        setFeedback(`Welcome back, ${credential.user.email ?? email}. Redirecting to the board...`)
+        await signInWithEmailAndPassword(auth, normalizedEmail, password)
+        setFeedback('Signed in. Opening your training board.')
       }
 
       setPassword('')
       setConfirmPassword('')
       openRoute(BOARD_ROUTE)
     } catch (firebaseError) {
-      if (firebaseError instanceof Error) {
-        setError(firebaseError.message)
-      } else {
-        setError('Authentication failed.')
-      }
+      setError(getFirebaseAuthErrorMessage(firebaseError, 'We could not complete sign-in. Check your details and try again.'))
     } finally {
       setIsLoading(false)
     }
@@ -141,15 +184,11 @@ function App() {
     setIsLoading(true)
 
     try {
-      const credential = await signInWithPopup(auth, googleProvider)
-      setFeedback(`Welcome, ${credential.user.email ?? 'player'}. Redirecting to the board...`)
+      await signInWithPopup(auth, googleProvider)
+      setFeedback('Google sign-in completed. Opening your training board.')
       openRoute(BOARD_ROUTE)
     } catch (firebaseError) {
-      if (firebaseError instanceof Error) {
-        setError(firebaseError.message)
-      } else {
-        setError('Google sign-in failed.')
-      }
+      setError(getFirebaseAuthErrorMessage(firebaseError, 'Google sign-in could not be completed. Try again in a moment.'))
     } finally {
       setIsLoading(false)
     }
@@ -164,11 +203,7 @@ function App() {
       setFeedback('Session closed successfully.')
       openRoute(AUTH_ROUTE, true)
     } catch (firebaseError) {
-      if (firebaseError instanceof Error) {
-        setError(firebaseError.message)
-      } else {
-        setError('Sign out failed.')
-      }
+      setError(getFirebaseAuthErrorMessage(firebaseError, 'We could not sign you out. Try again in a moment.'))
     } finally {
       setIsLoading(false)
     }
@@ -177,45 +212,71 @@ function App() {
   const renderAuthPage = () => (
     <main className="auth-shell">
       <section className="auth-hero">
-        <p className="eyebrow">Enter the board</p>
-        <h1>Chess AIssistant</h1>
-        <p className="hero-copy">
-          The first ever AI tutor that helps you understand the board.
-        </p>
+        <div>
+          <p className="eyebrow">AI chess training</p>
+          <h1>Chess AIssistant</h1>
+          <p className="hero-copy">
+            Train with rated puzzles, review your progress, and get targeted AI hints when the position demands it.
+          </p>
+        </div>
 
         <div className="hero-pattern" aria-hidden="true">
           {Array.from({ length: 16 }, (_, index) => {
-            const row = Math.floor(index / 4);
-            const col = index % 4;
-            const isLight = (row + col) % 2 === 0;
+            const row = Math.floor(index / 4)
+            const col = index % 4
+            const isLight = (row + col) % 2 === 0
             return (
-                <span
-                    key={index}
-                    className={`pattern-square ${isLight ? 'light' : 'dark'}`}
-                />
-            );
+              <span
+                key={index}
+                className={`pattern-square ${isLight ? 'light' : 'dark'}`}
+              />
+            )
           })}
         </div>
 
-        <div className="hero-note">
-          <span className="note-label">Session</span>
-          <strong>{isAuthReady ? currentUser?.email ?? 'No active player' : 'Checking session...'}</strong>
+        <div className="auth-highlights" aria-label="Training features">
+          <div>
+            <span className="note-label">Adaptive</span>
+            <strong>Elo-based puzzle selection</strong>
+          </div>
+          <div>
+            <span className="note-label">Guided</span>
+            <strong>Context-aware hints</strong>
+          </div>
+          <div>
+            <span className="note-label">Tracked</span>
+            <strong>Profile and progress history</strong>
+          </div>
         </div>
       </section>
 
       <section className="auth-card">
+        <div className="auth-card-header">
+          <p className="panel-title">Player access</p>
+          <h2>{mode === 'login' ? 'Sign in to continue' : 'Create your account'}</h2>
+          <p>
+            {mode === 'login'
+              ? 'Use your email and password, or continue with Google.'
+              : 'Create a secure account to save puzzle attempts and Elo progress.'}
+          </p>
+        </div>
+
         <div className="mode-switch" role="tablist" aria-label="Authentication mode">
           <button
             type="button"
             className={mode === 'login' ? 'selected' : ''}
             onClick={() => handleModeChange('login')}
+            role="tab"
+            aria-selected={mode === 'login'}
           >
-            Log In
+            Sign in
           </button>
           <button
             type="button"
             className={mode === 'register' ? 'selected' : ''}
             onClick={() => handleModeChange('register')}
+            role="tab"
+            aria-selected={mode === 'register'}
           >
             Register
           </button>
@@ -227,9 +288,10 @@ function App() {
             <input
               type="email"
               autoComplete="email"
-              placeholder="player@club.com"
+              placeholder="you@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              aria-invalid={Boolean(error)}
               required
             />
           </label>
@@ -242,9 +304,11 @@ function App() {
               placeholder={mode === 'register' ? 'Create a password' : 'Enter your password'}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              minLength={6}
+              minLength={MIN_PASSWORD_LENGTH}
+              aria-invalid={Boolean(error)}
               required
             />
+            <small>Minimum {MIN_PASSWORD_LENGTH} characters.</small>
           </label>
 
           {mode === 'register' ? (
@@ -256,7 +320,8 @@ function App() {
                 placeholder="Repeat your password"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
-                minLength={6}
+                minLength={MIN_PASSWORD_LENGTH}
+                aria-invalid={Boolean(error)}
                 required
               />
             </label>
@@ -267,7 +332,7 @@ function App() {
           </button>
         </form>
 
-        <div className="divider" aria-hidden="true">
+        <div className="divider">
           <span>or</span>
         </div>
 
@@ -292,16 +357,18 @@ function App() {
               />
             </svg>
           </span>
-          <span>Continue With Google</span>
+          <span>Continue with Google</span>
         </button>
 
-        {feedback ? <p className="feedback success">{feedback}</p> : null}
-        {error ? <p className="feedback error">{error}</p> : null}
+        <div className="auth-message-region" aria-live="polite">
+          {feedback ? <p className="feedback success">{feedback}</p> : null}
+          {error ? <p className="feedback error">{error}</p> : null}
+        </div>
 
         <p className="form-caption">
           {mode === 'login'
-            ? 'Use your existing account to continue.'
-            : 'Successful registration automatically signs you in and opens the board.'}
+            ? 'Your session is protected by Firebase Authentication.'
+            : 'After registration, you will be signed in automatically.'}
         </p>
       </section>
     </main>
