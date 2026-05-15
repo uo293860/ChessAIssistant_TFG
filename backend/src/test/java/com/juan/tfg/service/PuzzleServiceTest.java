@@ -2,11 +2,13 @@ package com.juan.tfg.service;
 
 import com.juan.tfg.model.Puzzle;
 import com.juan.tfg.model.PuzzleAttempt;
+import com.juan.tfg.model.PuzzleSession;
 import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.PuzzleRepository;
+import com.juan.tfg.repository.PuzzleSessionRepository;
 import com.juan.tfg.repository.UserRepository;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,7 @@ class PuzzleServiceTest {
 
     private PuzzleRepository puzzleRepository;
     private PuzzleAttemptRepository puzzleAttemptRepository;
+    private PuzzleSessionRepository puzzleSessionRepository;
     private UserRepository userRepository;
     private EloService eloService;
     private AITutorService aITutorService;
@@ -39,12 +42,21 @@ class PuzzleServiceTest {
     void setUp() {
         puzzleRepository = mock(PuzzleRepository.class);
         puzzleAttemptRepository = mock(PuzzleAttemptRepository.class);
+        puzzleSessionRepository = mock(PuzzleSessionRepository.class);
         userRepository = mock(UserRepository.class);
         eloService = mock(EloService.class);
         aITutorService = mock(AITutorService.class);
+        when(puzzleSessionRepository.save(any(PuzzleSession.class))).thenAnswer(invocation -> {
+            PuzzleSession session = invocation.getArgument(0);
+            if (session.getId() == null) {
+                session.setId(10L);
+            }
+            return session;
+        });
         puzzleService = new PuzzleService(
                 puzzleRepository,
                 puzzleAttemptRepository,
+                puzzleSessionRepository,
                 userRepository,
                 eloService,
                 aITutorService
@@ -68,6 +80,7 @@ class PuzzleServiceTest {
         // Then
         assertThat(result).isPresent();
         assertThat(result.get().id()).isEqualTo("puzzle-1");
+        assertThat(result.get().sessionId()).isEqualTo(10L);
         assertThat(result.get().rating()).isEqualTo(1210);
     }
 
@@ -107,17 +120,21 @@ class PuzzleServiceTest {
     void getPuzzleHints_withValidPuzzle_shouldReturnGeneratedHints() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5 g1f3", 1000);
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
         String[] hints = {"Control the center.", "Develop a knight."};
-        when(puzzleRepository.findById("puzzle-1")).thenReturn(Optional.of(puzzle));
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(aITutorService.getHints(eq("start-fen"), eq(List.of("e2e4", "e7e5", "g1f3")), eq(List.of("opening", "short"))))
                 .thenReturn(hints);
 
         // When
-        Optional<String[]> result = puzzleService.getPuzzleHints("puzzle-1");
+        Optional<String[]> result = puzzleService.getPuzzleHints("user-1", 10L, "puzzle-1");
 
         // Then
         assertThat(result).isPresent();
         assertThat(result.get()).containsExactly(hints);
+        assertThat(session.getHintsUsed()).isEqualTo(1);
+        assertThat(session.getGeneratedHints()).isEqualTo(String.join("\n", hints));
     }
 
     @Test
@@ -126,22 +143,24 @@ class PuzzleServiceTest {
         String puzzleId = null;
 
         // When
-        Optional<String[]> result = puzzleService.getPuzzleHints(puzzleId);
+        Optional<String[]> result = puzzleService.getPuzzleHints("user-1", 10L, puzzleId);
 
         // Then
         assertThat(result).isEmpty();
-        verify(puzzleRepository, never()).findById(any());
+        verify(puzzleSessionRepository, never()).findByIdAndUserFirebaseUid(any(), any());
     }
 
     @Test
     void getPuzzleHints_withAiServiceException_shouldPropagateException() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
-        when(puzzleRepository.findById("puzzle-1")).thenReturn(Optional.of(puzzle));
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(aITutorService.getHints(any(), any(), any())).thenThrow(new IllegalStateException("AI unavailable"));
 
         // When
-        ThrowingCallable action = () -> puzzleService.getPuzzleHints("puzzle-1");
+        ThrowingCallable action = () -> puzzleService.getPuzzleHints("user-1", 10L, "puzzle-1");
 
         // Then
         assertThatThrownBy(action)
@@ -153,18 +172,16 @@ class PuzzleServiceTest {
     void verifyMove_withCorrectFinalMove_shouldSaveAttemptAndUpdateUserElo() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
-        User user = User.builder()
-                .firebaseUid("user-1")
-                .eloRating(1000)
-                .build();
-        when(puzzleRepository.findById("puzzle-1")).thenReturn(Optional.of(puzzle));
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
         when(eloService.calculateNewPlayerElo(1000, 1000, 0, 0)).thenReturn(1016);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", "puzzle-1", "e7e5", 1, 0, 0);
+        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5");
 
         // Then
         assertThat(result).isPresent();
@@ -172,6 +189,7 @@ class PuzzleServiceTest {
         assertThat(result.get().puzzleCompleted()).isTrue();
         assertThat(result.get().newElo()).isEqualTo(1016);
         assertThat(user.getEloRating()).isEqualTo(1016);
+        assertThat(session.isCompleted()).isTrue();
 
         ArgumentCaptor<PuzzleAttempt> attemptCaptor = ArgumentCaptor.forClass(PuzzleAttempt.class);
         verify(puzzleAttemptRepository).save(attemptCaptor.capture());
@@ -184,18 +202,18 @@ class PuzzleServiceTest {
     void verifyMove_withCorrectFinalMoveAfterFailures_shouldSaveUnsuccessfulAttemptAndUpdateUserElo() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
-        User user = User.builder()
-                .firebaseUid("user-1")
-                .eloRating(1000)
-                .build();
-        when(puzzleRepository.findById("puzzle-1")).thenReturn(Optional.of(puzzle));
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        session.setHintsUsed(1);
+        session.setFailedAttempts(2);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
         when(eloService.calculateNewPlayerElo(1000, 1000, 1, 2)).thenReturn(980);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", "puzzle-1", "e7e5", 1, 1, 2);
+        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5");
 
         // Then
         assertThat(result).isPresent();
@@ -212,15 +230,20 @@ class PuzzleServiceTest {
     void verifyMove_withIncorrectMove_shouldReturnIncorrectAndNotSaveAttempt() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
-        when(puzzleRepository.findById("puzzle-1")).thenReturn(Optional.of(puzzle));
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
 
         // When
-        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", "puzzle-1", "g1f3", 1, 0, 0);
+        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", 10L, "puzzle-1", "g1f3");
 
         // Then
         assertThat(result).isPresent();
         assertThat(result.get().correct()).isFalse();
+        assertThat(result.get().opponentMove()).isEmpty();
+        assertThat(result.get().nextMoveIndex()).isEqualTo(1);
         assertThat(result.get().newElo()).isNull();
+        assertThat(session.getFailedAttempts()).isEqualTo(1);
         verify(puzzleAttemptRepository, never()).save(any());
         verify(userRepository, never()).save(any());
     }
@@ -231,47 +254,64 @@ class PuzzleServiceTest {
         String blankMove = " ";
 
         // When
-        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", "puzzle-1", blankMove, 1, 0, 0);
+        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", 10L, "puzzle-1", blankMove);
 
         // Then
         assertThat(result).isEmpty();
-        verify(puzzleRepository, never()).findById(any());
+        verify(puzzleSessionRepository, never()).findByIdAndUserFirebaseUid(any(), any());
     }
 
     @Test
-    void verifyMove_withNegativeCounters_shouldClampCountersToZero() {
+    void verifyMove_withSessionCounters_shouldUseServerTrackedCounters() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
-        User user = User.builder()
-                .firebaseUid("user-1")
-                .eloRating(1000)
-                .build();
-        when(puzzleRepository.findById("puzzle-1")).thenReturn(Optional.of(puzzle));
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        session.setHintsUsed(2);
+        session.setFailedAttempts(1);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
-        when(eloService.calculateNewPlayerElo(1000, 1000, 0, 0)).thenReturn(1016);
+        when(eloService.calculateNewPlayerElo(1000, 1000, 2, 1)).thenReturn(990);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
-        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", "puzzle-1", "e7e5", 1, -3, -2);
+        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5");
 
         // Then
         assertThat(result).isPresent();
-        verify(eloService).calculateNewPlayerElo(1000, 1000, 0, 0);
+        verify(eloService).calculateNewPlayerElo(1000, 1000, 2, 1);
     }
 
     @Test
     void verifyMove_withRepositoryException_shouldPropagateException() {
         // Given
-        when(puzzleRepository.findById("puzzle-1")).thenThrow(new IllegalStateException("Database unavailable"));
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1"))
+                .thenThrow(new IllegalStateException("Database unavailable"));
 
         // When
-        ThrowingCallable action = () -> puzzleService.verifyMove("user-1", "puzzle-1", "e7e5", 1, 0, 0);
+        ThrowingCallable action = () -> puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5");
 
         // Then
         assertThatThrownBy(action)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Database unavailable");
+    }
+
+    private User buildUser(String firebaseUid, int eloRating) {
+        return User.builder()
+                .firebaseUid(firebaseUid)
+                .eloRating(eloRating)
+                .build();
+    }
+
+    private PuzzleSession buildSession(Long id, User user, Puzzle puzzle) {
+        return PuzzleSession.builder()
+                .id(id)
+                .user(user)
+                .puzzle(puzzle)
+                .nextMoveIndex(1)
+                .build();
     }
 
     private Puzzle buildPuzzle(String id, String moves, int rating) {

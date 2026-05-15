@@ -4,6 +4,7 @@ import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationRequestDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.service.PuzzleService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/puzzles")
 @CrossOrigin(origins = "http://localhost:5173")
-@lombok.RequiredArgsConstructor
+@RequiredArgsConstructor
 public class PuzzleController {
 
     private final PuzzleService puzzleService;
@@ -31,8 +32,16 @@ public class PuzzleController {
     }
 
     @GetMapping("/{puzzleId}/hints")
-    public ResponseEntity<String[]> getPuzzleHints(@PathVariable String puzzleId) {
-        return puzzleService.getPuzzleHints(puzzleId)
+    public ResponseEntity<String[]> getPuzzleHints(
+            @AuthenticationPrincipal String firebaseUid,
+            @PathVariable String puzzleId,
+            @RequestParam Long sessionId
+    ) {
+        if (firebaseUid == null || firebaseUid.isBlank()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        return puzzleService.getPuzzleHints(firebaseUid, sessionId, puzzleId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -48,11 +57,9 @@ public class PuzzleController {
 
         return puzzleService.verifyMove(
                         firebaseUid,
+                        request.sessionId(),
                         request.puzzleId(),
-                        request.move(),
-                        request.moveIndex(),
-                        request.hintsUsed(),
-                        request.failedAttempts()
+                        request.move()
                 )
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

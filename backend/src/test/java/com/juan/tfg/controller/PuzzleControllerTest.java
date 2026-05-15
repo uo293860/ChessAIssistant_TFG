@@ -33,7 +33,7 @@ class PuzzleControllerTest {
     @Test
     void getRandomPuzzle_withAuthenticatedUserAndPuzzle_shouldReturnOkResponse() {
         // Given
-        PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", "fen", 1200, "fork", "url", "e2e4");
+        PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 10L, "fen", 1200, "fork", "url", "e2e4");
         when(puzzleService.getRandomPuzzleForUser("user-1", "fork")).thenReturn(Optional.of(puzzle));
 
         // When
@@ -73,10 +73,10 @@ class PuzzleControllerTest {
     void getPuzzleHints_withExistingPuzzle_shouldReturnHints() {
         // Given
         String[] hints = {"Hint 1", "Hint 2"};
-        when(puzzleService.getPuzzleHints("puzzle-1")).thenReturn(Optional.of(hints));
+        when(puzzleService.getPuzzleHints("user-1", 10L, "puzzle-1")).thenReturn(Optional.of(hints));
 
         // When
-        ResponseEntity<String[]> response = puzzleController.getPuzzleHints("puzzle-1");
+        ResponseEntity<String[]> response = puzzleController.getPuzzleHints("user-1", "puzzle-1", 10L);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -86,21 +86,38 @@ class PuzzleControllerTest {
     @Test
     void getPuzzleHints_withMissingPuzzle_shouldReturnNotFound() {
         // Given
-        when(puzzleService.getPuzzleHints("missing-puzzle")).thenReturn(Optional.empty());
+        when(puzzleService.getPuzzleHints("user-1", 10L, "missing-puzzle")).thenReturn(Optional.empty());
 
         // When
-        ResponseEntity<String[]> response = puzzleController.getPuzzleHints("missing-puzzle");
+        ResponseEntity<String[]> response = puzzleController.getPuzzleHints("user-1", "missing-puzzle", 10L);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
+    void getPuzzleHints_withBlankFirebaseUid_shouldReturnUnauthorized() {
+        // Given
+        String firebaseUid = " ";
+
+        // When
+        ResponseEntity<String[]> response = puzzleController.getPuzzleHints(firebaseUid, "puzzle-1", 10L);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(puzzleService, never()).getPuzzleHints(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
     void verifyMove_withAuthenticatedUserAndValidRequest_shouldReturnOkResponse() {
         // Given
-        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO("puzzle-1", "e7e5", 1, 0, 0);
+        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
         PuzzleMoveVerificationResponseDTO verification = new PuzzleMoveVerificationResponseDTO(true, "", 2, true, 1016);
-        when(puzzleService.verifyMove("user-1", "puzzle-1", "e7e5", 1, 0, 0)).thenReturn(Optional.of(verification));
+        when(puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5")).thenReturn(Optional.of(verification));
 
         // When
         ResponseEntity<PuzzleMoveVerificationResponseDTO> response = puzzleController.verifyMove("user-1", request);
@@ -113,7 +130,7 @@ class PuzzleControllerTest {
     @Test
     void verifyMove_withNullFirebaseUid_shouldReturnUnauthorized() {
         // Given
-        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO("puzzle-1", "e7e5", 1, 0, 0);
+        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
 
         // When
         ResponseEntity<PuzzleMoveVerificationResponseDTO> response = puzzleController.verifyMove(null, request);
@@ -124,17 +141,15 @@ class PuzzleControllerTest {
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.anyInt()
+                org.mockito.ArgumentMatchers.any()
         );
     }
 
     @Test
     void verifyMove_withServiceReturningEmpty_shouldReturnNotFound() {
         // Given
-        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO("missing-puzzle", "e7e5", 1, 0, 0);
-        when(puzzleService.verifyMove("user-1", "missing-puzzle", "e7e5", 1, 0, 0)).thenReturn(Optional.empty());
+        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "missing-puzzle", "e7e5");
+        when(puzzleService.verifyMove("user-1", 10L, "missing-puzzle", "e7e5")).thenReturn(Optional.empty());
 
         // When
         ResponseEntity<PuzzleMoveVerificationResponseDTO> response = puzzleController.verifyMove("user-1", request);
@@ -146,8 +161,8 @@ class PuzzleControllerTest {
     @Test
     void verifyMove_withServiceException_shouldPropagateException() {
         // Given
-        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO("puzzle-1", "e7e5", 1, 0, 0);
-        when(puzzleService.verifyMove("user-1", "puzzle-1", "e7e5", 1, 0, 0))
+        PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
+        when(puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5"))
                 .thenThrow(new IllegalStateException("Verification failed"));
 
         // When

@@ -8,8 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,41 +28,49 @@ public class FirebaseConfig {
             return FirebaseApp.getInstance();
         }
 
-        try (InputStream serviceAccount = openServiceAccount()) {
+        try {
             FirebaseOptions options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .setCredentials(loadCredentials())
                     .build();
 
             FirebaseApp firebaseApp = FirebaseApp.initializeApp(options);
             logger.info("Firebase app initialized successfully.");
             return firebaseApp;
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to initialize Firebase Admin SDK.", e);
+            throw new IllegalStateException(
+                    "Unable to initialize Firebase Admin SDK. Set firebase.config.path, FIREBASE_CONFIG_PATH, or GOOGLE_APPLICATION_CREDENTIALS.",
+                    e
+            );
         }
     }
 
-    private InputStream openServiceAccount() throws IOException {
-        Path configuredPath = Path.of(firebaseConfigPath);
+    private GoogleCredentials loadCredentials() throws IOException {
+        if (firebaseConfigPath == null || firebaseConfigPath.isBlank()) {
+            return GoogleCredentials.getApplicationDefault();
+        }
+
+        Path serviceAccountPath = resolveServiceAccountPath();
+
+        try (InputStream serviceAccount = Files.newInputStream(serviceAccountPath)) {
+            return GoogleCredentials.fromStream(serviceAccount);
+        }
+    }
+
+    private Path resolveServiceAccountPath() {
+        Path configuredPath = Path.of(firebaseConfigPath.trim());
 
         if (Files.exists(configuredPath)) {
-            return Files.newInputStream(configuredPath);
+            return configuredPath;
         }
 
         Path backendRelativePath = Path.of("backend").resolve(firebaseConfigPath);
 
         if (Files.exists(backendRelativePath)) {
-            return Files.newInputStream(backendRelativePath);
+            return backendRelativePath;
         }
 
-        Resource classpathResource = new ClassPathResource(firebaseConfigPath);
-
-        if (classpathResource.exists()) {
-            return classpathResource.getInputStream();
-        }
-
-        throw new IllegalStateException("Firebase config file not found. Checked: "
+        throw new IllegalStateException("Firebase config file not found. Checked filesystem paths: "
                 + configuredPath.toAbsolutePath() + ", "
-                + backendRelativePath.toAbsolutePath() + ", and classpath:"
-                + firebaseConfigPath);
+                + backendRelativePath.toAbsolutePath());
     }
 }

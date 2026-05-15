@@ -23,6 +23,7 @@ type PendingPromotion = {
 
 type PuzzleDTO = {
   id: string
+  sessionId: number
   fen: string
   rating: number
   themes: string
@@ -31,11 +32,9 @@ type PuzzleDTO = {
 }
 
 type VerifyPuzzleMoveRequestDTO = {
+  sessionId: number
   puzzleId: string
   move: string
-  moveIndex: number
-  hintsUsed: number
-  failedAttempts: number
 }
 
 type VerifyPuzzleMoveResponseDTO = {
@@ -49,6 +48,7 @@ type VerifyPuzzleMoveResponseDTO = {
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
 const INITIAL_MOVE_DELAY_MS = 1200
 const INCORRECT_MOVE_FEEDBACK_MS = 650
+const MAX_HINT_COUNT = 3
 const lightSquareColor = '#f0f0f0'
 const darkSquareColor = '#8f8f8f'
 
@@ -97,7 +97,6 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const [isHintsLoading, setIsHintsLoading] = useState(false)
   const [isVerifyingMove, setIsVerifyingMove] = useState(false)
   const [isReplayingOpponentMove, setIsReplayingOpponentMove] = useState(false)
-  const [currentMoveIndex, setCurrentMoveIndex] = useState(1)
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [updatedElo, setUpdatedElo] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
@@ -214,11 +213,9 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
 
     try {
       const verification = await verifyPuzzleMove({
+        sessionId: puzzle.sessionId,
         puzzleId: puzzle.id,
         move: buildUciMove(from, to, promotion),
-        moveIndex: currentMoveIndex,
-        hintsUsed: revealedHintCount,
-        failedAttempts,
       })
 
       if (!verification.correct) {
@@ -238,7 +235,6 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
         replayTimeoutRef.current = window.setTimeout(() => {
           replayPuzzleMove(resolvedGame, verification.opponentMove)
           setGame(resolvedGame)
-          setCurrentMoveIndex(verification.nextMoveIndex)
           setIsPuzzleCompleted(verification.puzzleCompleted)
           setUpdatedElo(verification.newElo)
           setIsReplayingOpponentMove(false)
@@ -247,7 +243,6 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
         return true
       }
 
-      setCurrentMoveIndex(verification.nextMoveIndex)
       setIsPuzzleCompleted(verification.puzzleCompleted)
       setUpdatedElo(verification.newElo)
       return true
@@ -272,7 +267,6 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     setPuzzleHints([])
     setRevealedHintCount(0)
     setIsHintsLoading(false)
-    setCurrentMoveIndex(1)
     setFailedAttempts(0)
     setUpdatedElo(null)
     setIsPuzzleCompleted(false)
@@ -294,15 +288,10 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       return
     }
 
-    if (puzzleHints.length > 0) {
-      setRevealedHintCount((currentCount) => Math.min(currentCount + 1, puzzleHints.length))
-      return
-    }
-
     setIsHintsLoading(true)
 
     try {
-      const response = await fetchWithAuth(`/api/puzzles/${puzzle.id}/hints`)
+      const response = await fetchWithAuth(`/api/puzzles/${puzzle.id}/hints?sessionId=${puzzle.sessionId}`)
 
       if (!response.ok) {
         throw new Error('Unable to load puzzle hints.')
@@ -311,7 +300,9 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       const nextHints = (await response.json()) as string[]
       const sanitizedHints = nextHints.filter((hint) => hint.trim().length > 0)
       setPuzzleHints(sanitizedHints)
-      setRevealedHintCount(sanitizedHints.length > 0 ? 1 : 0)
+      setRevealedHintCount((currentCount) =>
+        sanitizedHints.length > 0 ? Math.min(currentCount + 1, sanitizedHints.length, MAX_HINT_COUNT) : 0
+      )
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load puzzle hints.'
       setPuzzleHints([message])
@@ -446,7 +437,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const boardInteractionDisabled =
     isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted
   const displayedHints = puzzleHints.slice(0, revealedHintCount)
-  const areHintsExhausted = puzzleHints.length > 0 && revealedHintCount >= Math.min(puzzleHints.length, 3)
+  const areHintsExhausted = puzzleHints.length > 0 && revealedHintCount >= Math.min(puzzleHints.length, MAX_HINT_COUNT)
 
   return (
     <main className="board-shell">
