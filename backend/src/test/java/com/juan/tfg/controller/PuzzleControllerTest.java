@@ -31,7 +31,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getRandomPuzzle_withAuthenticatedUserAndPuzzle_shouldReturnOkResponse() {
+    void getRandomPuzzle() {
         // Given
         PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 10L, "fen", 1200, "fork", "url", "e2e4");
         when(puzzleService.getRandomPuzzleForUser("user-1", "fork")).thenReturn(Optional.of(puzzle));
@@ -45,7 +45,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getRandomPuzzle_withBlankFirebaseUid_shouldReturnUnauthorized() {
+    void getRandomPuzzle_withBlankFirebaseUid() {
         // Given
         String firebaseUid = " ";
 
@@ -58,7 +58,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getRandomPuzzle_withMissingPuzzle_shouldReturnNotFound() {
+    void getRandomPuzzle_withMissingPuzzle() {
         // Given
         when(puzzleService.getRandomPuzzleForUser("user-1", "fork")).thenReturn(Optional.empty());
 
@@ -70,7 +70,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getPuzzleHints_withExistingPuzzle_shouldReturnHints() {
+    void getPuzzleHints_withExistingPuzzle() {
         // Given
         String[] hints = {"Hint 1", "Hint 2"};
         when(puzzleService.getPuzzleHints("user-1", 10L, "puzzle-1")).thenReturn(Optional.of(hints));
@@ -84,7 +84,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getPuzzleHints_withMissingPuzzle_shouldReturnNotFound() {
+    void getPuzzleHints_withMissingPuzzle() {
         // Given
         when(puzzleService.getPuzzleHints("user-1", 10L, "missing-puzzle")).thenReturn(Optional.empty());
 
@@ -96,7 +96,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getPuzzleHints_withBlankFirebaseUid_shouldReturnUnauthorized() {
+    void getPuzzleHints_withBlankFirebaseUid() {
         // Given
         String firebaseUid = " ";
 
@@ -113,7 +113,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void verifyMove_withAuthenticatedUserAndValidRequest_shouldReturnOkResponse() {
+    void verifyMove() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
         PuzzleMoveVerificationResponseDTO verification = new PuzzleMoveVerificationResponseDTO(true, "", 2, true, 1016);
@@ -128,7 +128,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void verifyMove_withNullFirebaseUid_shouldReturnUnauthorized() {
+    void verifyMove_withNullFirebaseUid() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
 
@@ -146,7 +146,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void verifyMove_withServiceReturningEmpty_shouldReturnNotFound() {
+    void verifyMove_withServiceReturningEmpty() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "missing-puzzle", "e7e5");
         when(puzzleService.verifyMove("user-1", 10L, "missing-puzzle", "e7e5")).thenReturn(Optional.empty());
@@ -159,7 +159,7 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void verifyMove_withServiceException_shouldPropagateException() {
+    void verifyMove_withServiceException() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
         when(puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5"))

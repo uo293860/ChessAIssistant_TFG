@@ -30,7 +30,7 @@ class UserControllerTest {
     }
 
     @Test
-    void getCurrentUser_withExistingUser_shouldReturnProfileDto() {
+    void getCurrentUser_withExistingUser() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -66,7 +66,7 @@ class UserControllerTest {
     }
 
     @Test
-    void getCurrentUser_withEmptyEloHistory_shouldReturnProfileWithEmptyHistory() {
+    void getCurrentUser_withEmptyEloHistory() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -89,7 +89,7 @@ class UserControllerTest {
     }
 
     @Test
-    void getCurrentUser_withServiceException_shouldPropagateException() {
+    void getCurrentUser_withServiceException() {
         // Given
         when(userService.getOrCreateUser("user-1")).thenThrow(new IllegalStateException("Firebase unavailable"));
 

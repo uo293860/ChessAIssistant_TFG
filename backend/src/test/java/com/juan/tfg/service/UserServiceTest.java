@@ -39,7 +39,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getOrCreateUser_withExistingFirebaseTokenUser_shouldReturnExistingUser() {
+    void getOrCreateUser_withExistingFirebaseTokenUser() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
         User existingUser = User.builder()
@@ -58,7 +58,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getOrCreateUser_withNewFirebaseTokenUser_shouldSaveSanitizedUser() {
+    void getOrCreateUser_withNewFirebaseTokenUser() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
         when(firebaseToken.getUid()).thenReturn("ABC123456789");
@@ -78,7 +78,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getOrCreateUser_withMissingFirebaseEmailAndName_shouldUseFallbackValues() {
+    void getOrCreateUser_withMissingFirebaseEmailAndName() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
         when(firebaseToken.getUid()).thenReturn("UID987654321");
@@ -97,7 +97,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getOrCreateUser_withDuplicateUsername_shouldAppendUidSuffix() {
+    void getOrCreateUser_withDuplicateUsername() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
         when(firebaseToken.getUid()).thenReturn("ABC123456789");
@@ -115,7 +115,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getEloHistory_withAttempts_shouldMapHistoryPoints() {
+    void getEloHistory_withAttempts() {
         // Given
         LocalDateTime attemptDate = LocalDateTime.of(2026, 5, 15, 10, 30);
         Puzzle puzzle = Puzzle.builder()
@@ -144,7 +144,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getEloHistory_withEmptyRepositoryResult_shouldReturnEmptyList() {
+    void getEloHistory_withEmptyRepositoryResult() {
         // Given
         when(puzzleAttemptRepository.findEloHistoryByUserId("user-1")).thenReturn(List.of());
 
@@ -156,7 +156,7 @@ class UserServiceTest {
     }
 
     @Test
-    void getEloHistory_withRepositoryException_shouldPropagateException() {
+    void getEloHistory_withRepositoryException() {
         // Given
         when(puzzleAttemptRepository.findEloHistoryByUserId("user-1")).thenThrow(new IllegalStateException("Database unavailable"));
 
@@ -170,7 +170,7 @@ class UserServiceTest {
     }
 
     @Test
-    void countPuzzleAttempts_withExistingAttempts_shouldReturnRepositoryCount() {
+    void countPuzzleAttempts_withExistingAttempts() {
         // Given
         when(puzzleAttemptRepository.countByFirebaseUid("user-1")).thenReturn(5L);
 
@@ -183,7 +183,7 @@ class UserServiceTest {
     }
 
     @Test
-    void countSolvedPuzzles_withExistingSolvedAttempts_shouldReturnRepositoryCount() {
+    void countSolvedPuzzles_withExistingSolvedAttempts() {
         // Given
         when(puzzleAttemptRepository.countSuccessfulByFirebaseUid("user-1")).thenReturn(3L);
 

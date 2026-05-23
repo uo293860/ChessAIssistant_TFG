@@ -3,7 +3,7 @@ package com.juan.tfg.service.lichess;
 import com.juan.tfg.model.Puzzle;
 import com.juan.tfg.repository.PuzzleRepository;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -11,9 +11,9 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
 @Service
+@AllArgsConstructor
 public class PuzzleImporterService {
 
-    @Autowired
     private PuzzleRepository puzzleRepository;
 
     @PostConstruct

@@ -9,7 +9,7 @@ class EloServiceTest {
     private final EloService eloService = new EloService();
 
     @Test
-    void calculateNewPlayerElo_withEqualRatingsAndNoPenalties_shouldIncreaseElo() {
+    void calculateNewPlayerElo_withEqualRatingsAndNoPenalties() {
         // Given
         int playerElo = 1000;
         int puzzleElo = 1000;
@@ -24,7 +24,7 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_withHintsAndFailedAttempts_shouldApplyPenalties() {
+    void calculateNewPlayerElo_withPenalties() {
         // Given
         int playerElo = 1000;
         int puzzleElo = 1000;
@@ -39,7 +39,7 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_withManyPenalties_shouldFloorActualScoreAtZero() {
+    void calculateNewPlayerElo_withManyPenalties() {
         // Given
         int playerElo = 1000;
         int puzzleElo = 1000;
@@ -54,7 +54,7 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_withHarderPuzzle_shouldRewardMoreThanEqualPuzzle() {
+    void calculateNewPlayerElo_withHarderPuzzle() {
         // Given
         int playerElo = 1000;
         int equalPuzzleElo = 1000;

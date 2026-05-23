@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PuzzleTest {
 
     @Test
-    void getInitialMove_withMultipleMoves_shouldReturnFirstMove() {
+    void getInitialMove_withMultipleMoves() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves("e2e4 e7e5 g1f3")
@@ -23,7 +23,7 @@ class PuzzleTest {
     }
 
     @Test
-    void getMoveAt_withValidIndex_shouldReturnRequestedMove() {
+    void getMoveAtIndex() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves("e2e4 e7e5 g1f3")
@@ -37,7 +37,7 @@ class PuzzleTest {
     }
 
     @Test
-    void getMoveAt_withOutOfRangeIndex_shouldReturnEmptyString() {
+    void getMoveAtIndexOR() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves("e2e4 e7e5")
@@ -51,7 +51,7 @@ class PuzzleTest {
     }
 
     @Test
-    void getMoveCount_withBlankMoves_shouldReturnZero() {
+    void getMoveCount_withBlankMoves() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves("   ")
@@ -65,7 +65,7 @@ class PuzzleTest {
     }
 
     @Test
-    void getInitialMove_withNullMoves_shouldThrowNullPointerException() {
+    void getInitialMove_withNullMoves() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves(null)

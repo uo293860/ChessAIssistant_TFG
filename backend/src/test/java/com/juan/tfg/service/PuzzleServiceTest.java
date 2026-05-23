@@ -64,7 +64,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getRandomPuzzleForUser_withExistingUserAndMatchingPuzzle_shouldReturnPuzzleDto() {
+    void getRandomPuzzleForUser() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -85,7 +85,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getRandomPuzzleForUser_withMissingUser_shouldReturnEmpty() {
+    void getRandomPuzzleForUser_withMissingUser() {
         // Given
         when(userRepository.findById("missing-user")).thenReturn(Optional.empty());
 
@@ -98,7 +98,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getRandomPuzzleForUser_withNullUserElo_shouldUseDefaultRatingRange() {
+    void getRandomPuzzleForUser_withNullUserElo() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -117,7 +117,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getPuzzleHints_withValidPuzzle_shouldReturnGeneratedHints() {
+    void getPuzzleHints_withValidPuzzle() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5 g1f3", 1000);
         User user = buildUser("user-1", 1000);
@@ -138,7 +138,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getPuzzleHints_withNullPuzzleId_shouldReturnEmpty() {
+    void getPuzzleHints_withNullPuzzleId() {
         // Given
         String puzzleId = null;
 
@@ -151,7 +151,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getPuzzleHints_withAiServiceException_shouldPropagateException() {
+    void getPuzzleHints_withAiServiceException() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);
@@ -169,7 +169,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void verifyMove_withCorrectFinalMove_shouldSaveAttemptAndUpdateUserElo() {
+    void verifyMove_withCorrectFinalMove() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);
@@ -199,7 +199,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void verifyMove_withCorrectFinalMoveAfterFailures_shouldSaveUnsuccessfulAttemptAndUpdateUserElo() {
+    void verifyMove_withCorrectFinalMoveAfterFailures() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);
@@ -227,7 +227,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void verifyMove_withIncorrectMove_shouldReturnIncorrectAndNotSaveAttempt() {
+    void verifyMove_withIncorrectMove() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);
@@ -249,7 +249,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void verifyMove_withBlankMove_shouldReturnEmpty() {
+    void verifyMove_withBlankMove() {
         // Given
         String blankMove = " ";
 
@@ -262,7 +262,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void verifyMove_withSessionCounters_shouldUseServerTrackedCounters() {
+    void verifyMove_withSessionCounters() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);
@@ -284,7 +284,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void verifyMove_withRepositoryException_shouldPropagateException() {
+    void verifyMove_withRepositoryException() {
         // Given
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1"))
                 .thenThrow(new IllegalStateException("Database unavailable"));

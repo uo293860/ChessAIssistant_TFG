@@ -36,7 +36,7 @@ class RepositoryIntegrationTest {
     private PuzzleAttemptRepository puzzleAttemptRepository;
 
     @Test
-    void existsByUsername_withPersistedUser_shouldReturnTrue() {
+    void existsByUsername_withPersistedUser() {
         // Given
         User user = buildUser("user-1", "player-one");
         entityManager.persistAndFlush(user);
@@ -49,7 +49,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    void existsByUsername_withMissingUsername_shouldReturnFalse() {
+    void existsByUsername_withMissingUsername() {
         // Given
         User user = buildUser("user-1", "player-one");
         entityManager.persistAndFlush(user);
@@ -62,7 +62,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    void findRandomPuzzleByThemeAndRating_withMatchingPuzzle_shouldReturnPuzzle() {
+    void findPuzzleByThemeAndRating() {
         // Given
         Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1250, "fork middlegame");
         Puzzle outOfThemePuzzle = buildPuzzle("puzzle-2", 1240, "mate endgame");
@@ -83,7 +83,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    void findRandomPuzzleByThemeAndRating_withNoMatchingPuzzle_shouldReturnEmpty() {
+    void findPuzzleByThemeAndRating_shouldReturnEmpty() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", 1250, "fork middlegame");
         entityManager.persistAndFlush(puzzle);
@@ -96,7 +96,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    void findEloHistoryByUserId_withAttempts_shouldReturnOnlyAttemptsWithResultingEloOrderedByDateAndId() {
+    void findEloHistoryByUserId() {
         // Given
         User user = buildUser("user-1", "player-one");
         User otherUser = buildUser("user-2", "player-two");
@@ -130,7 +130,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    void countByFirebaseUid_withPersistedAttempts_shouldReturnUserAttemptCount() {
+    void countByFirebaseUid_shouldReturnUserAttemptCount() {
         // Given
         User user = buildUser("user-1", "player-one");
         User otherUser = buildUser("user-2", "player-two");
@@ -151,7 +151,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    void countSuccessfulByFirebaseUid_withCleanSuccessfulAttempts_shouldReturnOnlyPerfectSuccesses() {
+    void countAttemptsWithNoMistakes() {
         // Given
         User user = buildUser("user-1", "player-one");
         Puzzle puzzle = buildPuzzle("puzzle-1", 1200, "fork middlegame");
