@@ -1,0 +1,6 @@
+target
+.mvn/wrapper/maven-wrapper.jar
+*.iml
+.env
+*firebase-adminsdk*.json
+chessaissistant-1ea8f-firebase-adminsdk-fbsvc-40f460c561.json
