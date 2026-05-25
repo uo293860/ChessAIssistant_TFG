@@ -1,6 +1,7 @@
 package com.juan.tfg.controller;
 
 import com.juan.tfg.model.User;
+import com.juan.tfg.model.dto.UserLeaderboardEntryDTO;
 import com.juan.tfg.model.dto.UserProfileDTO;
 import com.juan.tfg.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 @CrossOrigin(origins = "http://localhost:5173")
@@ -18,6 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
     private final UserService userService;
+
+    @GetMapping
+    public ResponseEntity<List<UserLeaderboardEntryDTO>> getUsersOrderedByEloRating() {
+        return ResponseEntity.ok(userService.getUsersOrderedByEloRating());
+    }
 
     @GetMapping("/me")
     public ResponseEntity<UserProfileDTO> getCurrentUser(@AuthenticationPrincipal String firebaseUid) {

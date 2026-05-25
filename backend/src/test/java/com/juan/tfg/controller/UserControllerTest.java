@@ -2,6 +2,7 @@ package com.juan.tfg.controller;
 
 import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.EloHistoryPointDTO;
+import com.juan.tfg.model.dto.UserLeaderboardEntryDTO;
 import com.juan.tfg.model.dto.UserProfileDTO;
 import com.juan.tfg.service.UserService;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -63,6 +64,23 @@ class UserControllerTest {
         assertThat(response.getBody().puzzlesAttempted()).isEqualTo(4L);
         assertThat(response.getBody().puzzlesSolved()).isEqualTo(3L);
         assertThat(response.getBody().eloHistory()).isEqualTo(eloHistory);
+    }
+
+    @Test
+    void getUsersOrderedByEloRating() {
+        // Given
+        List<UserLeaderboardEntryDTO> leaderboard = List.of(
+                new UserLeaderboardEntryDTO("highest", 1600),
+                new UserLeaderboardEntryDTO("lower", 1200)
+        );
+        when(userService.getUsersOrderedByEloRating()).thenReturn(leaderboard);
+
+        // When
+        ResponseEntity<List<UserLeaderboardEntryDTO>> response = userController.getUsersOrderedByEloRating();
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(leaderboard);
     }
 
     @Test

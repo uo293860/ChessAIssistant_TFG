@@ -6,8 +6,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-chessai_db}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-root}
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    networks:
+      - data
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -32,13 +32,14 @@ services:
       OLLAMA_API_URL: http://ollama:11434/api/generate
       OLLAMA_MODEL: ${OLLAMA_MODEL:-gemma4:e4b}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
-    ports:
-      - "${BACKEND_PORT:-8080}:8080"
     volumes:
       - ${FIREBASE_CONFIG_FILE:-./backend/chessaissistant-1ea8f-firebase-adminsdk-fbsvc-40f460c561.json}:/run/secrets/firebase-service-account.json:ro
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - app
+      - data
     restart: unless-stopped
 
   frontend:
@@ -55,9 +56,11 @@ services:
       VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID:-}
       VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID:-}
     ports:
-      - "${FRONTEND_PORT:-3000}:80"
+      - "3000:80"
     depends_on:
       - backend
+    networks:
+      - app
     restart: unless-stopped
 
   ollama:
@@ -65,10 +68,10 @@ services:
     container_name: chessai-ollama
     profiles:
       - ollama
-    ports:
-      - "${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama-data:/root/.ollama
+    networks:
+      - data
     restart: unless-stopped
 
   ollama-model:
@@ -83,8 +86,14 @@ services:
     command: ["until ollama list >/dev/null 2>&1; do sleep 2; done; ollama pull $${OLLAMA_MODEL}"]
     depends_on:
       - ollama
+    networks:
+      - data
     restart: "no"
 
 volumes:
   postgres-data:
   ollama-data:
+
+networks:
+  app:
+  data:

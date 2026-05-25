@@ -62,6 +62,35 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    void findAllByOrderByEloRatingDescUsernameAsc() {
+        // Given
+        User lowerRatedUser = buildUser("user-1", "lower");
+        lowerRatedUser.setEloRating(1200);
+        User higherRatedUser = buildUser("user-2", "higher");
+        higherRatedUser.setEloRating(1600);
+        User tiedUserFirstByUsername = buildUser("user-3", "alpha");
+        tiedUserFirstByUsername.setEloRating(1400);
+        User tiedUserSecondByUsername = buildUser("user-4", "zeta");
+        tiedUserSecondByUsername.setEloRating(1400);
+        entityManager.persist(lowerRatedUser);
+        entityManager.persist(higherRatedUser);
+        entityManager.persist(tiedUserSecondByUsername);
+        entityManager.persist(tiedUserFirstByUsername);
+        entityManager.flush();
+
+        // When
+        List<User> result = userRepository.findAllByOrderByEloRatingDescUsernameAsc();
+
+        // Then
+        assertThat(result)
+                .extracting(User::getUsername)
+                .containsExactly("higher", "alpha", "zeta", "lower");
+        assertThat(result)
+                .extracting(User::getEloRating)
+                .containsExactly(1600, 1400, 1400, 1200);
+    }
+
+    @Test
     void findPuzzleByThemeAndRating() {
         // Given
         Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1250, "fork middlegame");

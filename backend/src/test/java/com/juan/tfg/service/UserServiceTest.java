@@ -6,6 +6,7 @@ import com.juan.tfg.model.Puzzle;
 import com.juan.tfg.model.PuzzleAttempt;
 import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.EloHistoryPointDTO;
+import com.juan.tfg.model.dto.UserLeaderboardEntryDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.UserRepository;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -19,9 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class UserServiceTest {
 
@@ -153,6 +152,38 @@ class UserServiceTest {
 
         // Then
         assertThat(result).isEmpty();
+    }
+
+    @Test
+    void getUsersOrderedByEloRating() {
+        // Given
+        User highestRatedUser = User.builder()
+                .firebaseUid("user-2")
+                .username("highest")
+                .email("highest@example.com")
+                .eloRating(1600)
+                .build();
+        User lowerRatedUser = User.builder()
+                .firebaseUid("user-1")
+                .username("lower")
+                .email("lower@example.com")
+                .eloRating(1200)
+                .build();
+        when(userRepository.findAllByOrderByEloRatingDescUsernameAsc())
+                .thenReturn(List.of(highestRatedUser, lowerRatedUser));
+
+        // When
+        List<UserLeaderboardEntryDTO> result = userService.getUsersOrderedByEloRating();
+
+        // Then
+        assertThat(result).hasSize(2);
+        assertThat(result)
+                .extracting(UserLeaderboardEntryDTO::username)
+                .containsExactly("highest", "lower");
+        assertThat(result)
+                .extracting(UserLeaderboardEntryDTO::eloRating)
+                .containsExactly(1600, 1200);
+        verify(userRepository).findAllByOrderByEloRatingDescUsernameAsc();
     }
 
     @Test

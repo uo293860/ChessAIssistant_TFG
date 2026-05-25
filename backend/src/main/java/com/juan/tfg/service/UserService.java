@@ -8,6 +8,7 @@ import com.google.firebase.auth.UserRecord;
 import com.juan.tfg.model.PuzzleAttempt;
 import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.EloHistoryPointDTO;
+import com.juan.tfg.model.dto.UserLeaderboardEntryDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +55,20 @@ public class UserService {
         return puzzleAttemptRepository.findEloHistoryByUserId(firebaseUid).stream()
                 .map(this::toEloHistoryPointDTO)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserLeaderboardEntryDTO> getUsersOrderedByEloRating() {
+        return userRepository.findAllByOrderByEloRatingDescUsernameAsc().stream()
+                .map(this::toLeaderboardEntryDTO)
+                .toList();
+    }
+
+    private UserLeaderboardEntryDTO toLeaderboardEntryDTO(User user) {
+        return new UserLeaderboardEntryDTO(
+                user.getUsername(),
+                user.getEloRating()
+        );
     }
 
     private EloHistoryPointDTO toEloHistoryPointDTO(PuzzleAttempt puzzleAttempt) {
