@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 import type { Square } from 'chess.js'
 import { Chessboard } from 'react-chessboard'
 import { fetchWithAuth } from '../api/apiClient'
+import { Leaderboard } from '../components/Leaderboard'
 
 type ChessColor = 'w' | 'b'
 type PromotionPiece = 'b' | 'n' | 'r' | 'q'
@@ -101,6 +102,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const [updatedElo, setUpdatedElo] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
   const [incorrectMoveSquare, setIncorrectMoveSquare] = useState<Square | null>(null)
+  const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0)
   const replayTimeoutRef = useRef<number | null>(null)
   const incorrectMoveTimeoutRef = useRef<number | null>(null)
 
@@ -194,6 +196,15 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     return (await response.json()) as VerifyPuzzleMoveResponseDTO
   }
 
+  const applyPuzzleResult = (puzzleCompleted: boolean, newElo: number | null) => {
+    setIsPuzzleCompleted(puzzleCompleted)
+    setUpdatedElo(newElo)
+
+    if (puzzleCompleted && newElo !== null) {
+      setLeaderboardRefreshKey((currentKey) => currentKey + 1)
+    }
+  }
+
   const tryPuzzleMove = async (from: Square, to: Square, promotion?: PromotionPiece) => {
     if (!puzzle || isPuzzleCompleted) {
       return false
@@ -235,16 +246,14 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
         replayTimeoutRef.current = window.setTimeout(() => {
           replayPuzzleMove(resolvedGame, verification.opponentMove)
           setGame(resolvedGame)
-          setIsPuzzleCompleted(verification.puzzleCompleted)
-          setUpdatedElo(verification.newElo)
+          applyPuzzleResult(verification.puzzleCompleted, verification.newElo)
           setIsReplayingOpponentMove(false)
           replayTimeoutRef.current = null
         }, INITIAL_MOVE_DELAY_MS)
         return true
       }
 
-      setIsPuzzleCompleted(verification.puzzleCompleted)
-      setUpdatedElo(verification.newElo)
+      applyPuzzleResult(verification.puzzleCompleted, verification.newElo)
       return true
     } catch {
       clearSelection()
@@ -318,6 +327,8 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       clearReplayTimeout()
       clearIncorrectMoveTimeout()
     }
+    // The initial puzzle should be loaded once when the board page mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handlePromotionChoice = (promotion: PromotionPiece) => {
@@ -456,6 +467,9 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       </section>
 
       <section className="board-layout">
+        <Leaderboard refreshKey={leaderboardRefreshKey} />
+
+        <section className="training-layout" aria-label="Puzzle board and controls">
         <div className="board-card">
           <div className="board-frame">
             <Chessboard
@@ -570,6 +584,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
             </div>
           </div>
         </aside>
+        </section>
       </section>
     </main>
   )

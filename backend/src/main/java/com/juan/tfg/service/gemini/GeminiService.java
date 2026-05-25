@@ -29,7 +29,7 @@ public class GeminiService extends AbstractAITutorService {
             String prompt = getPrompt(fen, solution, themes);
 
             GenerateContentResponse response = client.models.generateContent(
-                    "gemini-3.1-flash-lite-preview",
+                    "gemini-3.1-flash-lite",
                     prompt,
                     null
             );

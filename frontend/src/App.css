@@ -391,9 +391,17 @@
 
 .board-layout {
   display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.training-layout {
+  display: grid;
   grid-template-columns: minmax(0, 760px) minmax(280px, 360px);
   gap: 20px;
   align-items: start;
+  justify-content: center;
 }
 
 .board-card,
@@ -415,6 +423,99 @@
 
 .board-panel {
   padding: 18px;
+}
+
+.leaderboard-panel {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 14px;
+  max-height: calc(100vh - 118px);
+  overflow: hidden;
+}
+
+.leaderboard-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.leaderboard-header strong {
+  display: block;
+  color: #111111;
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.leaderboard-list {
+  display: grid;
+  gap: 6px;
+  min-height: 140px;
+  overflow: auto;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 70px;
+  gap: 10px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111111;
+}
+
+.leaderboard-row-header {
+  min-height: 32px;
+  background: transparent;
+  color: #5c5c5c;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leaderboard-row-header span:last-child {
+  justify-self: end;
+}
+
+.leaderboard-rank {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.leaderboard-username {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-elo {
+  justify-self: end;
+  font-size: 1rem;
+}
+
+.leaderboard-state {
+  margin: 8px 0 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #4c4c4c;
+}
+
+.error-text {
+  color: #8a1f1f;
 }
 
 .panel-title {
@@ -692,9 +793,15 @@
 @media (max-width: 920px) {
   .auth-shell,
   .board-layout,
+  .training-layout,
   .personal-data-grid,
   .game-data-grid {
     grid-template-columns: 1fr;
+  }
+
+  .leaderboard-panel {
+    position: static;
+    max-height: none;
   }
 
   .auth-shell,
