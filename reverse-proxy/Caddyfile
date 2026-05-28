@@ -1,0 +1,17 @@
+(app_routes) {
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+
+{$APP_DOMAIN:localhost} {
+	import app_routes
+}
+
+http://localhost, http://127.0.0.1 {
+	import app_routes
+}
