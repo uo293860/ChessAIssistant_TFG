@@ -214,7 +214,6 @@ function App() {
     <main className="auth-shell">
       <section className="auth-hero">
         <div>
-          <img className="auth-logo" src={appLogo} alt="ChessAIssistant logo" />
           <p className="eyebrow">AI chess training</p>
           <h1>ChessAIssistant</h1>
           <p className="hero-copy">
@@ -222,18 +221,8 @@ function App() {
           </p>
         </div>
 
-        <div className="hero-pattern" aria-hidden="true">
-          {Array.from({ length: 16 }, (_, index) => {
-            const row = Math.floor(index / 4)
-            const col = index % 4
-            const isLight = (row + col) % 2 === 0
-            return (
-              <span
-                key={index}
-                className={`pattern-square ${isLight ? 'light' : 'dark'}`}
-              />
-            )
-          })}
+        <div className="hero-logo-frame" aria-hidden="true">
+          <img src={appLogo} alt="" />
         </div>
 
         <div className="auth-highlights" aria-label="Training features">
