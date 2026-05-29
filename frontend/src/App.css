@@ -72,16 +72,44 @@
   font-size: 1.06rem;
 }
 
-.hero-logo-frame {
-  width: min(360px, 72vw);
-  padding: 8px;
+.hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 100%;
 }
 
-.hero-logo-frame img {
-  display: block;
-  width: 100%;
-  height: auto;
+.hero-title-row h1 {
+  margin-bottom: 14px;
+}
+
+.hero-title-logo {
+  flex: 0 0 auto;
+  width: min(126px, 18vw);
+  height: 5rem;
   object-fit: contain;
+  margin-bottom: 2rem;
+}
+
+.hero-pattern {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 72px));
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+}
+
+.pattern-square {
+  width: 72px;
+  aspect-ratio: 1;
+}
+
+.pattern-square.light {
+  background: #f3f3f3;
+}
+
+.pattern-square.dark {
+  background: #151515;
 }
 
 .hero-note {
@@ -837,8 +865,22 @@
     min-height: auto;
   }
 
-  .hero-logo-frame {
+  .hero-title-row {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .hero-title-logo {
+    width: 72px;
+  }
+
+  .hero-pattern {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: min(320px, 100%);
+  }
+
+  .pattern-square {
+    width: 100%;
   }
 
   .auth-highlights {
