@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
-import { CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { fetchWithAuth } from '../api/apiClient'
+import {useEffect, useState} from 'react'
+import {CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts'
+import {fetchWithAuth} from '../api/apiClient'
+import appMark from '../assets/logo.png'
 
 type ProfilePageProps = {
   fallbackEmail?: string | null
@@ -135,9 +136,12 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
   return (
     <main className="profile-shell">
       <section className="profile-header">
-        <div>
-          <p className="panel-title">Player profile</p>
-          <h1>{username}</h1>
+        <div className="profile-brand">
+          <img className="profile-logo" src={appMark} alt="ChessAIssistant logo" />
+          <div>
+            <p className="panel-title">Player profile</p>
+            <h1>{username}</h1>
+          </div>
         </div>
         <div className="profile-actions">
           <button type="button" className="secondary-action compact-action" onClick={onBackToBoard}>

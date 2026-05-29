@@ -1,19 +1,20 @@
-import type { FormEvent } from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import type {FormEvent} from 'react'
+import {useEffect, useMemo, useState} from 'react'
+import type {User} from 'firebase/auth'
 import {
-  GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
 } from 'firebase/auth'
-import type { User } from 'firebase/auth'
-import { FirebaseError } from 'firebase/app'
+import {FirebaseError} from 'firebase/app'
 import './App.css'
-import { auth } from './firebase'
-import { BoardPage } from './pages/BoardPage'
-import { ProfilePage } from './pages/ProfilePage'
+import {auth} from './firebase'
+import appLogo from './assets/logo.png'
+import {BoardPage} from './pages/BoardPage'
+import {ProfilePage} from './pages/ProfilePage'
 
 type AuthMode = 'login' | 'register'
 type AppRoute = '/' | '/board' | '/profile'
@@ -213,8 +214,9 @@ function App() {
     <main className="auth-shell">
       <section className="auth-hero">
         <div>
+          <img className="auth-logo" src={appLogo} alt="ChessAIssistant logo" />
           <p className="eyebrow">AI chess training</p>
-          <h1>Chess AIssistant</h1>
+          <h1>ChessAIssistant</h1>
           <p className="hero-copy">
             Train with rated puzzles, review your progress, and get targeted AI hints when the position demands it.
           </p>

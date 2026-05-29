@@ -45,6 +45,14 @@
   margin-bottom: 20px;
 }
 
+.auth-logo {
+  display: block;
+  width: min(280px, 72vw);
+  height: auto;
+  margin: 0 0 20px;
+  object-fit: contain;
+}
+
 .auth-card-header h2 {
   margin: 4px 0 8px;
   color: #111111;
@@ -361,6 +369,21 @@
   border-radius: 20px;
 }
 
+.page-brand,
+.profile-brand {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.page-logo {
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
 .board-header-card h1 {
   margin-bottom: 0;
   font-size: clamp(1.45rem, 3vw, 2.25rem);
@@ -618,6 +641,18 @@
   gap: 12px;
 }
 
+.profile-brand {
+  align-items: flex-start;
+}
+
+.profile-logo {
+  flex: 0 0 auto;
+  width: 7rem;
+  height: 7rem;
+  object-fit: contain;
+  margin-right: 1rem;
+}
+
 .profile-layout {
   display: grid;
   gap: 24px;
@@ -835,6 +870,21 @@
   .board-header-card,
   .profile-header {
     flex-direction: column;
+  }
+
+  .page-brand,
+  .profile-brand {
+    width: 100%;
+  }
+
+  .page-logo {
+    width: 52px;
+    height: 52px;
+  }
+
+  .profile-logo {
+    width: 64px;
+    height: 64px;
   }
 
   .board-actions,

@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { Chess } from 'chess.js'
-import type { CSSProperties } from 'react'
-import type { Square } from 'chess.js'
-import { Chessboard } from 'react-chessboard'
-import { fetchWithAuth } from '../api/apiClient'
-import { Leaderboard } from '../components/Leaderboard'
+import type {CSSProperties} from 'react'
+import {useEffect, useRef, useState} from 'react'
+import type {Square} from 'chess.js'
+import {Chess} from 'chess.js'
+import {Chessboard} from 'react-chessboard'
+import {fetchWithAuth} from '../api/apiClient'
+import appMark from '../assets/logo.png'
+import {Leaderboard} from '../components/Leaderboard'
 
 type ChessColor = 'w' | 'b'
 type PromotionPiece = 'b' | 'n' | 'r' | 'q'
@@ -453,7 +454,8 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   return (
     <main className="board-shell">
       <section className="board-header-card">
-        <div>
+        <div className="page-brand">
+          <img className="page-logo" src={appMark} alt="" aria-hidden="true" />
           <h1>ChessAIssistant</h1>
         </div>
         <div className="board-actions">
