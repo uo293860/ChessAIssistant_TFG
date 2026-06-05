@@ -1,4 +1,4 @@
-import type {CSSProperties} from 'react'
+import type {CSSProperties, ReactNode} from 'react'
 import {useEffect, useRef, useState} from 'react'
 import type {Square} from 'chess.js'
 import {Chess} from 'chess.js'
@@ -50,6 +50,7 @@ type VerifyPuzzleMoveResponseDTO = {
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
 const INITIAL_MOVE_DELAY_MS = 1200
 const INCORRECT_MOVE_FEEDBACK_MS = 650
+const CORRECT_MOVE_FEEDBACK_MS = 650
 const MAX_HINT_COUNT = 3
 const lightSquareColor = '#f0f0f0'
 const darkSquareColor = '#8f8f8f'
@@ -78,13 +79,6 @@ const getPieceCode = (color: ChessColor, piece: PromotionPiece) => {
   return `${color}${piece.toUpperCase()}`
 }
 
-const getSquareColor = (square: Square) => {
-  const fileIndex = square.charCodeAt(0) - 'a'.charCodeAt(0)
-  const rank = Number(square[1])
-
-  return (fileIndex + rank) % 2 === 0 ? lightSquareColor : darkSquareColor
-}
-
 export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProps) {
   const [game, setGame] = useState(() => new Chess())
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
@@ -103,9 +97,11 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const [updatedElo, setUpdatedElo] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
   const [incorrectMoveSquare, setIncorrectMoveSquare] = useState<Square | null>(null)
+  const [correctMoveSquare, setCorrectMoveSquare] = useState<Square | null>(null)
   const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0)
   const replayTimeoutRef = useRef<number | null>(null)
   const incorrectMoveTimeoutRef = useRef<number | null>(null)
+  const correctMoveTimeoutRef = useRef<number | null>(null)
 
   const clearSelection = () => {
     setSelectedSquare(null)
@@ -127,8 +123,17 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     }
   }
 
+  const clearCorrectMoveTimeout = () => {
+    if (correctMoveTimeoutRef.current !== null) {
+      window.clearTimeout(correctMoveTimeoutRef.current)
+      correctMoveTimeoutRef.current = null
+    }
+  }
+
   const showIncorrectMoveFeedback = (square: Square) => {
     clearIncorrectMoveTimeout()
+    clearCorrectMoveTimeout()
+    setCorrectMoveSquare(null)
     setIncorrectMoveSquare(square)
 
     return new Promise<void>((resolve) => {
@@ -138,6 +143,18 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
         resolve()
       }, INCORRECT_MOVE_FEEDBACK_MS)
     })
+  }
+
+  const showCorrectMoveFeedback = (square: Square) => {
+    clearCorrectMoveTimeout()
+    clearIncorrectMoveTimeout()
+    setIncorrectMoveSquare(null)
+    setCorrectMoveSquare(square)
+
+    correctMoveTimeoutRef.current = window.setTimeout(() => {
+      setCorrectMoveSquare(null)
+      correctMoveTimeoutRef.current = null
+    }, CORRECT_MOVE_FEEDBACK_MS)
   }
 
   const getPositionAfterInitialMove = (nextPuzzle: PuzzleDTO) => {
@@ -215,7 +232,6 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     const moveResult = nextGame.move({ from, to, promotion })
 
     if (!moveResult) {
-      void showIncorrectMoveFeedback(to)
       return false
     }
 
@@ -239,6 +255,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       }
 
       clearSelection()
+      showCorrectMoveFeedback(to)
 
       if (verification.opponentMove) {
         const resolvedGame = new Chess(nextGame.fen())
@@ -258,7 +275,6 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
       return true
     } catch {
       clearSelection()
-      await showIncorrectMoveFeedback(to)
       setGame(previousGame)
       return false
     } finally {
@@ -269,11 +285,13 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const loadRandomPuzzle = async () => {
     clearReplayTimeout()
     clearIncorrectMoveTimeout()
+    clearCorrectMoveTimeout()
     setIsPuzzleLoading(true)
     setIsReplayingInitialMove(false)
     setIsReplayingOpponentMove(false)
     setIsVerifyingMove(false)
     setIncorrectMoveSquare(null)
+    setCorrectMoveSquare(null)
     setPuzzleHints([])
     setRevealedHintCount(0)
     setIsHintsLoading(false)
@@ -327,6 +345,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     return () => {
       clearReplayTimeout()
       clearIncorrectMoveTimeout()
+      clearCorrectMoveTimeout()
     }
     // The initial puzzle should be loaded once when the board page mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -395,7 +414,6 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     const matchingMoves = game.moves({ square: from, verbose: true }).filter((move) => move.to === to)
 
     if (matchingMoves.length === 0) {
-      void showIncorrectMoveFeedback(to)
       return false
     }
 
@@ -434,16 +452,17 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     }
   }
 
-  if (incorrectMoveSquare) {
-    squareStyles[incorrectMoveSquare] = {
-      ...(squareStyles[incorrectMoveSquare] ?? {}),
-      background:
-        'linear-gradient(45deg, transparent 43%, rgba(220, 38, 38, 0.95) 44%, rgba(220, 38, 38, 0.95) 56%, transparent 57%), linear-gradient(-45deg, transparent 43%, rgba(220, 38, 38, 0.95) 44%, rgba(220, 38, 38, 0.95) 56%, transparent 57%)',
-      backgroundColor: getSquareColor(incorrectMoveSquare),
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      backgroundSize: '34% 34%',
-    }
+  const renderSquare = ({ square, children }: { square: string; children?: ReactNode }) => {
+    const isIncorrectMove = square === incorrectMoveSquare
+    const isCorrectMove = square === correctMoveSquare
+
+    return (
+      <div className="board-square-content" style={squareStyles[square]}>
+        {children}
+        {isCorrectMove ? <span className="correct-move-badge" aria-hidden="true" /> : null}
+        {isIncorrectMove ? <span className="incorrect-move-badge" aria-hidden="true" /> : null}
+      </div>
+    )
   }
 
   const boardInteractionDisabled =
@@ -491,6 +510,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
                 darkSquareStyle: { backgroundColor: darkSquareColor },
                 lightSquareStyle: { backgroundColor: lightSquareColor },
                 squareStyles,
+                squareRenderer: renderSquare,
                 canDragPiece: ({ piece }) => {
                   if (boardInteractionDisabled || !piece) {
                     return false
