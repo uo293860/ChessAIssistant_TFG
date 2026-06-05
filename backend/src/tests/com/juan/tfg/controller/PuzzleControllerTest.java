@@ -14,10 +14,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class PuzzleControllerTest {
 
@@ -116,7 +113,7 @@ class PuzzleControllerTest {
     void verifyMove() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
-        PuzzleMoveVerificationResponseDTO verification = new PuzzleMoveVerificationResponseDTO(true, "", 2, true, 1016);
+        PuzzleMoveVerificationResponseDTO verification = new PuzzleMoveVerificationResponseDTO(true, "", 2, true, 1016, 16);
         when(puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5")).thenReturn(Optional.of(verification));
 
         // When

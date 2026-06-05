@@ -20,13 +20,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class PuzzleServiceTest {
 
@@ -188,6 +183,7 @@ class PuzzleServiceTest {
         assertThat(result.get().correct()).isTrue();
         assertThat(result.get().puzzleCompleted()).isTrue();
         assertThat(result.get().newElo()).isEqualTo(1016);
+        assertThat(result.get().eloChange()).isEqualTo(16);
         assertThat(user.getEloRating()).isEqualTo(1016);
         assertThat(session.isCompleted()).isTrue();
 
@@ -218,6 +214,7 @@ class PuzzleServiceTest {
         // Then
         assertThat(result).isPresent();
         assertThat(result.get().newElo()).isEqualTo(980);
+        assertThat(result.get().eloChange()).isEqualTo(-20);
 
         ArgumentCaptor<PuzzleAttempt> attemptCaptor = ArgumentCaptor.forClass(PuzzleAttempt.class);
         verify(puzzleAttemptRepository).save(attemptCaptor.capture());
@@ -243,6 +240,7 @@ class PuzzleServiceTest {
         assertThat(result.get().opponentMove()).isEmpty();
         assertThat(result.get().nextMoveIndex()).isEqualTo(1);
         assertThat(result.get().newElo()).isNull();
+        assertThat(result.get().eloChange()).isNull();
         assertThat(session.getFailedAttempts()).isEqualTo(1);
         verify(puzzleAttemptRepository, never()).save(any());
         verify(userRepository, never()).save(any());
