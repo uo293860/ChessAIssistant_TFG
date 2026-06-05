@@ -2,10 +2,12 @@ import {useEffect, useState} from 'react'
 import {CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts'
 import {fetchWithAuth} from '../api/apiClient'
 import appMark from '../assets/logo.png'
+import {AboutLink} from '../components/AboutLink'
 
 type ProfilePageProps = {
   fallbackEmail?: string | null
   onBackToBoard: () => void
+  onOpenAbout: () => void
   onSignOut: () => Promise<void>
 }
 
@@ -95,7 +97,7 @@ const buildEloChartData = (history: EloHistoryPointDTO[]): EloChartPoint[] => {
   }))
 }
 
-export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: ProfilePageProps) {
+export function ProfilePage({ fallbackEmail, onBackToBoard, onOpenAbout, onSignOut }: ProfilePageProps) {
   const [profile, setProfile] = useState<UserProfileDTO | null>(null)
   const [isProfileLoading, setIsProfileLoading] = useState(true)
   const [error, setError] = useState('')
@@ -247,6 +249,7 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
 
         {error ? <p className="feedback error profile-feedback">{error}</p> : null}
       </section>
+      <AboutLink onOpenAbout={onOpenAbout} />
     </main>
   )
 }

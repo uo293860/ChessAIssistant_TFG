@@ -13,15 +13,18 @@ import {FirebaseError} from 'firebase/app'
 import './App.css'
 import {auth} from './firebase'
 import appLogo from './assets/logo.png'
+import {AboutLink} from './components/AboutLink'
+import {AboutPage} from './pages/AboutPage'
 import {BoardPage} from './pages/BoardPage'
 import {ProfilePage} from './pages/ProfilePage'
 
 type AuthMode = 'login' | 'register'
-type AppRoute = '/' | '/board' | '/profile'
+type AppRoute = '/' | '/board' | '/profile' | '/about'
 
 const AUTH_ROUTE: AppRoute = '/'
 const BOARD_ROUTE: AppRoute = '/board'
 const PROFILE_ROUTE: AppRoute = '/profile'
+const ABOUT_ROUTE: AppRoute = '/about'
 const MIN_PASSWORD_LENGTH = 6
 
 const getFirebaseAuthErrorMessage = (firebaseError: unknown, fallbackMessage: string) => {
@@ -66,6 +69,10 @@ const getCurrentRoute = (): AppRoute => {
     return PROFILE_ROUTE
   }
 
+  if (window.location.pathname === ABOUT_ROUTE) {
+    return ABOUT_ROUTE
+  }
+
   return AUTH_ROUTE
 }
 
@@ -106,8 +113,10 @@ function App() {
       setIsAuthReady(true)
 
       if (user) {
-        navigateTo(BOARD_ROUTE, true)
-        setRoute(BOARD_ROUTE)
+        if (getCurrentRoute() === AUTH_ROUTE) {
+          navigateTo(BOARD_ROUTE, true)
+          setRoute(BOARD_ROUTE)
+        }
         return
       }
 
@@ -374,6 +383,8 @@ function App() {
             ? 'Your session is protected by Firebase Authentication.'
             : 'After registration, you will be signed in automatically.'}
         </p>
+
+        <AboutLink onOpenAbout={() => openRoute(ABOUT_ROUTE)} />
       </section>
     </main>
   )
@@ -400,6 +411,7 @@ function App() {
         isLoading={isLoading}
         userEmail={currentUser.email}
         onOpenProfile={() => openRoute(PROFILE_ROUTE)}
+        onOpenAbout={() => openRoute(ABOUT_ROUTE)}
         onSignOut={handleSignOut}
       />
     )
@@ -414,6 +426,19 @@ function App() {
       <ProfilePage
         fallbackEmail={currentUser.email}
         onBackToBoard={() => openRoute(BOARD_ROUTE)}
+        onOpenAbout={() => openRoute(ABOUT_ROUTE)}
+        onSignOut={handleSignOut}
+      />
+    )
+  }
+
+  if (route === ABOUT_ROUTE) {
+    return (
+      <AboutPage
+        isAuthenticated={Boolean(currentUser)}
+        onOpenBoard={() => openRoute(BOARD_ROUTE)}
+        onOpenProfile={() => openRoute(PROFILE_ROUTE)}
+        onOpenAuth={() => openRoute(AUTH_ROUTE)}
         onSignOut={handleSignOut}
       />
     )

@@ -35,6 +35,7 @@
 }
 
 .auth-card {
+  display: grid;
   align-self: center;
   padding: 24px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(242, 242, 242, 0.96));
@@ -736,6 +737,186 @@
   gap: 24px;
 }
 
+.about-shell {
+  min-height: 100vh;
+  padding: 24px;
+  display: grid;
+  align-content: start;
+  gap: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.82), transparent 34%),
+    linear-gradient(135deg, #f4f1ea 0%, #ededed 48%, #d9d2c3 100%);
+}
+
+.about-header,
+.about-hero-card,
+.about-card,
+.faq-section,
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+}
+
+.about-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px;
+}
+
+.about-hero-card {
+  display: grid;
+  gap: 14px;
+  padding: clamp(24px, 4vw, 42px);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 42%),
+    linear-gradient(160deg, #171717 0%, #090909 68%, #252017 100%);
+  color: #f5f5f5;
+}
+
+.about-hero-card h2 {
+  max-width: 780px;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 0.98;
+}
+
+.about-hero-card p:not(.eyebrow) {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.about-card {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+}
+
+.about-card strong {
+  color: #111111;
+  font-size: 1.25rem;
+}
+
+.about-card p:not(.panel-title) {
+  margin: 0;
+  color: #4c4c4c;
+  line-height: 1.55;
+}
+
+.faq-section {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+}
+
+.faq-section h2 {
+  margin: 0;
+  color: #111111;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+}
+
+.faq-list {
+  display: grid;
+  gap: 10px;
+}
+
+.faq-item {
+  overflow: hidden;
+  box-shadow: none;
+}
+
+.faq-question {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 58px;
+  padding: 16px 18px;
+  border: 0;
+  border-bottom: 2px solid #111111;
+  background: #ffffff;
+  color: #111111;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  text-align: left;
+}
+
+.faq-question:hover,
+.faq-question:focus-visible {
+  background: #f5f5f5;
+}
+
+.faq-question:focus-visible {
+  outline: 3px solid rgba(17, 17, 17, 0.18);
+  outline-offset: -3px;
+}
+
+.faq-arrow {
+  width: 14px;
+  height: 14px;
+  border-right: 4px solid #111111;
+  border-bottom: 4px solid #111111;
+  transform: rotate(-45deg);
+  transition: transform 0.18s ease;
+}
+
+.faq-item.open .faq-arrow {
+  transform: rotate(45deg);
+}
+
+.faq-answer {
+  padding: 18px 18px 18px 44px;
+  background: #f0f0f0;
+}
+
+.faq-answer p {
+  margin: 0;
+  color: #4c4c4c;
+  line-height: 1.55;
+}
+
+.about-link-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.about-link-button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid rgba(17, 17, 17, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #222222;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.about-link-button:hover {
+  background: #ffffff;
+  color: #111111;
+}
+
 .profile-actions {
   min-width: 220px;
   display: grid;
@@ -944,7 +1125,8 @@
   .board-layout,
   .training-layout,
   .personal-data-grid,
-  .game-data-grid {
+  .game-data-grid,
+  .about-grid {
     grid-template-columns: 1fr;
   }
 
@@ -955,7 +1137,8 @@
 
   .auth-shell,
   .board-shell,
-  .profile-shell {
+  .profile-shell,
+  .about-shell {
     padding: 16px;
   }
 
@@ -991,7 +1174,8 @@
   }
 
   .board-header-card,
-  .profile-header {
+  .profile-header,
+  .about-header {
     flex-direction: column;
   }
 
@@ -1030,6 +1214,10 @@
 
   .board-actions .compact-action {
     width: 100%;
+  }
+
+  .about-hero-card {
+    padding: 24px;
   }
 
 }

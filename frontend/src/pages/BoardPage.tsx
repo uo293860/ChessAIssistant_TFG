@@ -5,6 +5,7 @@ import {Chess} from 'chess.js'
 import {Chessboard} from 'react-chessboard'
 import {fetchWithAuth} from '../api/apiClient'
 import appMark from '../assets/logo.png'
+import {AboutLink} from '../components/AboutLink'
 import {Leaderboard} from '../components/Leaderboard'
 
 type ChessColor = 'w' | 'b'
@@ -14,6 +15,7 @@ type BoardPageProps = {
   isLoading: boolean
   userEmail?: string | null
   onOpenProfile: () => void
+  onOpenAbout: () => void
   onSignOut: () => Promise<void>
 }
 
@@ -84,7 +86,7 @@ const formatEloChange = (eloChange: number) => {
   return eloChange >= 0 ? `+${eloChange}` : `${eloChange}`
 }
 
-export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProps) {
+export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: BoardPageProps) {
   const [game, setGame] = useState(() => new Chess())
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
   const [puzzle, setPuzzle] = useState<PuzzleDTO | null>(null)
@@ -631,6 +633,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
         </aside>
         </section>
       </section>
+      <AboutLink onOpenAbout={onOpenAbout} />
     </main>
   )
 
