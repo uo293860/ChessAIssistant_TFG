@@ -45,6 +45,7 @@ type VerifyPuzzleMoveResponseDTO = {
   nextMoveIndex: number
   puzzleCompleted: boolean
   newElo: number | null
+  eloChange: number | null
 }
 
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
@@ -79,6 +80,10 @@ const getPieceCode = (color: ChessColor, piece: PromotionPiece) => {
   return `${color}${piece.toUpperCase()}`
 }
 
+const formatEloChange = (eloChange: number) => {
+  return eloChange >= 0 ? `+${eloChange}` : `${eloChange}`
+}
+
 export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProps) {
   const [game, setGame] = useState(() => new Chess())
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
@@ -95,6 +100,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
   const [isReplayingOpponentMove, setIsReplayingOpponentMove] = useState(false)
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [updatedElo, setUpdatedElo] = useState<number | null>(null)
+  const [updatedEloChange, setUpdatedEloChange] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
   const [incorrectMoveSquare, setIncorrectMoveSquare] = useState<Square | null>(null)
   const [correctMoveSquare, setCorrectMoveSquare] = useState<Square | null>(null)
@@ -214,9 +220,10 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     return (await response.json()) as VerifyPuzzleMoveResponseDTO
   }
 
-  const applyPuzzleResult = (puzzleCompleted: boolean, newElo: number | null) => {
+  const applyPuzzleResult = (puzzleCompleted: boolean, newElo: number | null, eloChange: number | null) => {
     setIsPuzzleCompleted(puzzleCompleted)
     setUpdatedElo(newElo)
+    setUpdatedEloChange(eloChange)
 
     if (puzzleCompleted && newElo !== null) {
       setLeaderboardRefreshKey((currentKey) => currentKey + 1)
@@ -264,14 +271,14 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
         replayTimeoutRef.current = window.setTimeout(() => {
           replayPuzzleMove(resolvedGame, verification.opponentMove)
           setGame(resolvedGame)
-          applyPuzzleResult(verification.puzzleCompleted, verification.newElo)
+          applyPuzzleResult(verification.puzzleCompleted, verification.newElo, verification.eloChange)
           setIsReplayingOpponentMove(false)
           replayTimeoutRef.current = null
         }, INITIAL_MOVE_DELAY_MS)
         return true
       }
 
-      applyPuzzleResult(verification.puzzleCompleted, verification.newElo)
+      applyPuzzleResult(verification.puzzleCompleted, verification.newElo, verification.eloChange)
       return true
     } catch {
       clearSelection()
@@ -297,6 +304,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     setIsHintsLoading(false)
     setFailedAttempts(0)
     setUpdatedElo(null)
+    setUpdatedEloChange(null)
     setIsPuzzleCompleted(false)
     clearSelection()
 
@@ -469,6 +477,7 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
     isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted
   const displayedHints = puzzleHints.slice(0, revealedHintCount)
   const areHintsExhausted = puzzleHints.length > 0 && revealedHintCount >= Math.min(puzzleHints.length, MAX_HINT_COUNT)
+  const hasCompletedEloResult = isPuzzleCompleted && updatedElo !== null && updatedEloChange !== null
 
   return (
     <main className="board-shell">
@@ -542,10 +551,10 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
                   ? failedAttempts > 0
                     ? updatedElo === null
                       ? 'Puzzle completed with mistakes. It will count as unsolved.'
-                      : `Puzzle completed with mistakes. It will count as unsolved. Your new Elo is ${updatedElo}.`
+                      : 'Puzzle completed with mistakes. It will count as unsolved.'
                     : updatedElo === null
                       ? 'Puzzle solved. Load a new puzzle to continue.'
-                      : `Puzzle solved. Your new Elo is ${updatedElo}.`
+                      : 'Puzzle solved. Load a new puzzle to continue.'
                 : pendingPromotion
                   ? `Choose a promotion piece for ${pendingPromotion.to}.`
                   : selectedSquare
@@ -554,6 +563,20 @@ export function BoardPage({ isLoading, onOpenProfile, onSignOut }: BoardPageProp
                       ? 'Fetching a random puzzle from the backend.'
                       : 'Drag a piece or click a square to see legal moves.'}
             </p>
+            {hasCompletedEloResult ? (
+              <div className="completion-elo-summary" aria-label="Puzzle Elo result">
+                <span className="completion-elo-item">
+                  <span>New Elo</span>
+                  <strong>{updatedElo}</strong>
+                </span>
+                <span className="completion-elo-item">
+                  <span>Variation</span>
+                  <strong className={updatedEloChange >= 0 ? 'positive' : 'negative'}>
+                    {formatEloChange(updatedEloChange)}
+                  </strong>
+                </span>
+              </div>
+            ) : null}
           </div>
 
           {pendingPromotion ? (

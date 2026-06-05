@@ -105,6 +105,7 @@
 	</dependencies>
 
 	<build>
+		<testSourceDirectory>src/tests</testSourceDirectory>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

@@ -107,6 +107,7 @@ public class PuzzleService {
                     "",
                     moveIndex,
                     false,
+                    null,
                     null
             );
         }
@@ -121,6 +122,7 @@ public class PuzzleService {
                     "",
                     moveIndex,
                     false,
+                    null,
                     null
             );
         }
@@ -128,12 +130,12 @@ public class PuzzleService {
         String opponentMove = getOptionalNormalizedMove(puzzle, moveIndex + 1);
         int nextMoveIndex = opponentMove.isBlank() ? moveIndex + 1 : moveIndex + 2;
         boolean puzzleCompleted = moveIndex >= puzzle.getMoveCount() - 1;
-        Integer newElo = null;
+        EloUpdate eloUpdate = null;
 
         session.setNextMoveIndex(nextMoveIndex);
 
         if (puzzleCompleted) {
-            newElo = saveCompletedAttemptAndUpdateUserElo(session);
+            eloUpdate = saveCompletedAttemptAndUpdateUserElo(session);
             session.setCompleted(true);
         }
 
@@ -144,11 +146,12 @@ public class PuzzleService {
                 opponentMove,
                 nextMoveIndex,
                 puzzleCompleted,
-                newElo
+                eloUpdate == null ? null : eloUpdate.newElo(),
+                eloUpdate == null ? null : eloUpdate.eloChange()
         );
     }
 
-    private int saveCompletedAttemptAndUpdateUserElo(PuzzleSession session) {
+    private EloUpdate saveCompletedAttemptAndUpdateUserElo(PuzzleSession session) {
         User user = userRepository.findById(session.getUser().getFirebaseUid())
                 .orElseThrow(() -> new IllegalStateException("Authenticated user was not found."));
         Puzzle puzzle = session.getPuzzle();
@@ -173,7 +176,10 @@ public class PuzzleService {
         user.setEloRating(newElo);
         userRepository.save(user);
 
-        return newElo;
+        return new EloUpdate(newElo, eloChange);
+    }
+
+    private record EloUpdate(int newElo, int eloChange) {
     }
 
     private String getOptionalNormalizedMove(Puzzle puzzle, int moveIndex) {

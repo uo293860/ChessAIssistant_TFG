@@ -198,9 +198,12 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onSignOut }: Profile
                   <strong>{isProfileLoading ? 'Loading...' : `${eloHistory.length} puzzle attempts`}</strong>
                 </div>
                 {!isProfileLoading && eloHistory.length > 0 ? (
-                  <span className={`elo-delta ${latestEloChange >= 0 ? 'positive' : 'negative'}`}>
-                    {latestEloChange >= 0 ? `+${latestEloChange}` : latestEloChange}
-                  </span>
+                  <div className="elo-delta-summary" aria-label="Last Elo variation">
+                    <span>Last Elo variation</span>
+                    <span className={`elo-delta ${latestEloChange >= 0 ? 'positive' : 'negative'}`}>
+                      {latestEloChange >= 0 ? `+${latestEloChange}` : latestEloChange}
+                    </span>
+                  </div>
                 ) : null}
               </div>
 
