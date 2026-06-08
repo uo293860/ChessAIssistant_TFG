@@ -10,6 +10,7 @@ import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.PuzzleRepository;
 import com.juan.tfg.repository.PuzzleSessionRepository;
 import com.juan.tfg.repository.UserRepository;
+import com.juan.tfg.service.aitutor.AITutorService;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

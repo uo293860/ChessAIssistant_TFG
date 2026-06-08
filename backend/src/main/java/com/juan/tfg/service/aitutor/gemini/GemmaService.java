@@ -1,6 +1,6 @@
-package com.juan.tfg.service.gemini;
+package com.juan.tfg.service.aitutor.gemini;
 
-import com.juan.tfg.service.AbstractAITutorService;
+import com.juan.tfg.service.aitutor.AbstractAITutorService;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,4 +1,4 @@
-package com.juan.tfg.service;
+package com.juan.tfg.service.aitutor;
 
 import java.util.List;
 

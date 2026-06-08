@@ -1,8 +1,8 @@
-package com.juan.tfg.service.gemini;
+package com.juan.tfg.service.aitutor.gemini;
 
 import com.google.genai.Client;
 import com.google.genai.types.GenerateContentResponse;
-import com.juan.tfg.service.AbstractAITutorService;
+import com.juan.tfg.service.aitutor.AbstractAITutorService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;

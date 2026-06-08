@@ -52,7 +52,7 @@ const getFirebaseAuthErrorMessage = (firebaseError: unknown, fallbackMessage: st
     case 'auth/too-many-requests':
       return 'Access is temporarily limited after several failed attempts. Wait a moment and try again.'
     case 'auth/weak-password':
-      return `Use a password with at least ${MIN_PASSWORD_LENGTH} characters.`
+      return `Use a password with at least ${MIN_PASSWORD_LENGTH} characters and a capital letter.`
     case 'auth/operation-not-allowed':
       return 'This sign-in method is not enabled yet. Contact support if the problem continues.'
     default:
@@ -159,7 +159,7 @@ function App() {
     }
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Use a password with at least ${MIN_PASSWORD_LENGTH} characters.`)
+      setError(`Use a password with at least ${MIN_PASSWORD_LENGTH} characters and a capital letter.`)
       return
     }
 
