@@ -426,7 +426,7 @@
 
 .board-layout {
   display: grid;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  grid-template-columns: minmax(340px, 460px) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
@@ -464,6 +464,7 @@
   position: sticky;
   top: 16px;
   display: grid;
+  grid-template-rows: auto minmax(0, auto) auto;
   gap: 14px;
   max-height: calc(100vh - 118px);
   overflow: hidden;
@@ -485,14 +486,19 @@
 
 .leaderboard-list {
   display: grid;
+  grid-template-rows: auto;
+  align-content: start;
   gap: 6px;
   min-height: 140px;
+  max-height: clamp(180px, calc(100vh - 330px), 500px);
   overflow: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .leaderboard-row {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr) 70px;
+  grid-template-columns: 38px minmax(0, 1fr) 68px 54px;
   gap: 10px;
   align-items: center;
   min-height: 42px;
@@ -512,8 +518,18 @@
   text-transform: uppercase;
 }
 
+.leaderboard-row-header span:nth-child(3),
 .leaderboard-row-header span:last-child {
   justify-self: end;
+}
+
+.leaderboard-row-current {
+  background: #d9efff;
+  box-shadow: inset 0 0 0 2px #8ecff6, 0 10px 22px rgba(52, 152, 219, 0.18);
+}
+
+.leaderboard-row-current .leaderboard-rank {
+  background: #2f9ed8;
 }
 
 .leaderboard-rank {
@@ -529,16 +545,98 @@
 }
 
 .leaderboard-username {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 800;
+}
+
+.leaderboard-username-text {
   min-width: 0;
   overflow: hidden;
-  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.leaderboard-current-label {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f78ad;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .leaderboard-elo {
   justify-self: end;
   font-size: 1rem;
+}
+
+.leaderboard-daily-change {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 34px;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.leaderboard-daily-change.positive {
+  color: #168047;
+}
+
+.leaderboard-daily-change.negative {
+  color: #c02a2a;
+}
+
+.leaderboard-daily-change.neutral {
+  color: #777777;
+}
+
+.leaderboard-daily-line {
+  width: 16px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.leaderboard-daily-arrow {
+  width: 0;
+  height: 0;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+}
+
+.leaderboard-daily-change.positive .leaderboard-daily-arrow {
+  border-bottom: 7px solid currentColor;
+}
+
+.leaderboard-daily-change.negative .leaderboard-daily-arrow {
+  border-top: 7px solid currentColor;
+}
+
+.leaderboard-current-summary {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(17, 17, 17, 0.1);
+}
+
+.leaderboard-current-summary-label {
+  color: #5c5c5c;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.leaderboard-current-summary-row {
+  min-height: 46px;
 }
 
 .leaderboard-state {

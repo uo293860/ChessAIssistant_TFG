@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 @DataJpaTest(properties = {
         "spring.jpa.hibernate.ddl-auto=create-drop",
@@ -196,6 +197,46 @@ class RepositoryIntegrationTest {
 
         // Then
         assertThat(result).isEqualTo(1);
+    }
+
+    @Test
+    void findDailyEloChangesSince_shouldGroupCurrentDayChangesByUser() {
+        // Given
+        User user = buildUser("user-1", "player-one");
+        User otherUser = buildUser("user-2", "player-two");
+        Puzzle puzzle = buildPuzzle("puzzle-1", 1200, "fork middlegame");
+        entityManager.persist(user);
+        entityManager.persist(otherUser);
+        entityManager.persist(puzzle);
+
+        PuzzleAttempt userMorningAttempt = persistAttempt(user, puzzle, true, 0, 12, 1012);
+        PuzzleAttempt userAfternoonAttempt = persistAttempt(user, puzzle, false, 1, -8, 1004);
+        PuzzleAttempt ignoredPreviousDayAttempt = persistAttempt(user, puzzle, true, 0, 20, 1024);
+        PuzzleAttempt otherUserAttempt = persistAttempt(otherUser, puzzle, true, 0, 10, 1010);
+        PuzzleAttempt ignoredAttemptWithoutResultingElo = persistAttempt(otherUser, puzzle, false, 1, -6, null);
+        entityManager.flush();
+
+        LocalDateTime startOfDay = LocalDateTime.of(2026, 6, 9, 0, 0);
+        updateAttemptDate(userMorningAttempt.getId(), LocalDateTime.of(2026, 6, 9, 9, 0));
+        updateAttemptDate(userAfternoonAttempt.getId(), LocalDateTime.of(2026, 6, 9, 15, 0));
+        updateAttemptDate(ignoredPreviousDayAttempt.getId(), LocalDateTime.of(2026, 6, 8, 23, 0));
+        updateAttemptDate(otherUserAttempt.getId(), LocalDateTime.of(2026, 6, 9, 12, 0));
+        updateAttemptDate(ignoredAttemptWithoutResultingElo.getId(), LocalDateTime.of(2026, 6, 9, 13, 0));
+        entityManager.clear();
+
+        // When
+        List<PuzzleAttemptRepository.UserDailyEloChange> result = puzzleAttemptRepository.findDailyEloChangesSince(startOfDay);
+
+        // Then
+        assertThat(result)
+                .extracting(
+                        PuzzleAttemptRepository.UserDailyEloChange::getFirebaseUid,
+                        PuzzleAttemptRepository.UserDailyEloChange::getEloChange
+                )
+                .containsExactlyInAnyOrder(
+                        tuple("user-1", 4L),
+                        tuple("user-2", 10L)
+                );
     }
 
     private User buildUser(String firebaseUid, String username) {

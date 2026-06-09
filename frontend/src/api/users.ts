@@ -3,6 +3,8 @@ import { fetchWithAuth } from './apiClient'
 export type UserLeaderboardEntryDTO = {
   username: string
   eloRating: number
+  dailyRankChange: number
+  currentUser: boolean
 }
 
 export const fetchLeaderboard = async () => {

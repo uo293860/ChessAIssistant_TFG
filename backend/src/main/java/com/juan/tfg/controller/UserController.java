@@ -23,8 +23,8 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<UserLeaderboardEntryDTO>> getUsersOrderedByEloRating() {
-        return ResponseEntity.ok(userService.getUsersOrderedByEloRating());
+    public ResponseEntity<List<UserLeaderboardEntryDTO>> getUsersOrderedByEloRating(@AuthenticationPrincipal String firebaseUid) {
+        return ResponseEntity.ok(userService.getUsersOrderedByEloRating(firebaseUid));
     }
 
     @GetMapping("/me")

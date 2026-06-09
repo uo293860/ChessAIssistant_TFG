@@ -409,7 +409,6 @@ function App() {
     return (
       <BoardPage
         isLoading={isLoading}
-        userEmail={currentUser.email}
         onOpenProfile={() => openRoute(PROFILE_ROUTE)}
         onOpenAbout={() => openRoute(ABOUT_ROUTE)}
         onSignOut={handleSignOut}

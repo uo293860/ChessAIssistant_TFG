@@ -17,9 +17,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @RequiredArgsConstructor
 @Service
@@ -58,16 +64,58 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserLeaderboardEntryDTO> getUsersOrderedByEloRating() {
-        return userRepository.findAllByOrderByEloRatingDescUsernameAsc().stream()
-                .map(this::toLeaderboardEntryDTO)
+    public List<UserLeaderboardEntryDTO> getUsersOrderedByEloRating(String currentFirebaseUid) {
+        List<User> currentLeaderboard = userRepository.findAllByOrderByEloRatingDescUsernameAsc();
+        Map<String, Integer> dailyEloChanges = getDailyEloChanges();
+        Map<String, Integer> startOfDayRanks = getStartOfDayRanks(currentLeaderboard, dailyEloChanges);
+
+        return IntStream.range(0, currentLeaderboard.size())
+                .mapToObj(index -> toLeaderboardEntryDTO(
+                        currentLeaderboard.get(index),
+                        startOfDayRanks.get(currentLeaderboard.get(index).getFirebaseUid()) - (index + 1),
+                        currentFirebaseUid
+                ))
                 .toList();
     }
 
-    private UserLeaderboardEntryDTO toLeaderboardEntryDTO(User user) {
+    private Map<String, Integer> getDailyEloChanges() {
+        return puzzleAttemptRepository.findDailyEloChangesSince(LocalDate.now().atStartOfDay()).stream()
+                .collect(Collectors.toMap(
+                        PuzzleAttemptRepository.UserDailyEloChange::getFirebaseUid,
+                        dailyChange -> Math.toIntExact(dailyChange.getEloChange())
+                ));
+    }
+
+    private Map<String, Integer> getStartOfDayRanks(List<User> currentLeaderboard, Map<String, Integer> dailyEloChanges) {
+        List<User> startOfDayLeaderboard = currentLeaderboard.stream()
+                .sorted(Comparator
+                        .comparingInt((User user) -> getStartOfDayElo(user, dailyEloChanges))
+                        .reversed()
+                        .thenComparing(User::getUsername))
+                .toList();
+
+        return IntStream.range(0, startOfDayLeaderboard.size())
+                .boxed()
+                .collect(Collectors.toMap(
+                        index -> startOfDayLeaderboard.get(index).getFirebaseUid(),
+                        index -> index + 1
+                ));
+    }
+
+    private int getStartOfDayElo(User user, Map<String, Integer> dailyEloChanges) {
+        return resolveEloRating(user) - dailyEloChanges.getOrDefault(user.getFirebaseUid(), 0);
+    }
+
+    private int resolveEloRating(User user) {
+        return Optional.ofNullable(user.getEloRating()).orElse(1000);
+    }
+
+    private UserLeaderboardEntryDTO toLeaderboardEntryDTO(User user, int dailyRankChange, String currentFirebaseUid) {
         return new UserLeaderboardEntryDTO(
                 user.getUsername(),
-                user.getEloRating()
+                user.getEloRating(),
+                dailyRankChange,
+                Objects.equals(user.getFirebaseUid(), currentFirebaseUid)
         );
     }
 

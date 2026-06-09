@@ -70,13 +70,13 @@ class UserControllerTest {
     void getUsersOrderedByEloRating() {
         // Given
         List<UserLeaderboardEntryDTO> leaderboard = List.of(
-                new UserLeaderboardEntryDTO("highest", 1600),
-                new UserLeaderboardEntryDTO("lower", 1200)
+                new UserLeaderboardEntryDTO("highest", 1600, 0, false),
+                new UserLeaderboardEntryDTO("lower", 1200, 0, true)
         );
-        when(userService.getUsersOrderedByEloRating()).thenReturn(leaderboard);
+        when(userService.getUsersOrderedByEloRating("user-1")).thenReturn(leaderboard);
 
         // When
-        ResponseEntity<List<UserLeaderboardEntryDTO>> response = userController.getUsersOrderedByEloRating();
+        ResponseEntity<List<UserLeaderboardEntryDTO>> response = userController.getUsersOrderedByEloRating("user-1");
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);

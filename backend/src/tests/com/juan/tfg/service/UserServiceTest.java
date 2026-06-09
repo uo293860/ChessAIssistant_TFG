@@ -171,9 +171,10 @@ class UserServiceTest {
                 .build();
         when(userRepository.findAllByOrderByEloRatingDescUsernameAsc())
                 .thenReturn(List.of(highestRatedUser, lowerRatedUser));
+        when(puzzleAttemptRepository.findDailyEloChangesSince(any(LocalDateTime.class))).thenReturn(List.of());
 
         // When
-        List<UserLeaderboardEntryDTO> result = userService.getUsersOrderedByEloRating();
+        List<UserLeaderboardEntryDTO> result = userService.getUsersOrderedByEloRating("user-1");
 
         // Then
         assertThat(result).hasSize(2);
@@ -183,7 +184,57 @@ class UserServiceTest {
         assertThat(result)
                 .extracting(UserLeaderboardEntryDTO::eloRating)
                 .containsExactly(1600, 1200);
+        assertThat(result)
+                .extracting(UserLeaderboardEntryDTO::dailyRankChange)
+                .containsExactly(0, 0);
+        assertThat(result)
+                .extracting(UserLeaderboardEntryDTO::currentUser)
+                .containsExactly(false, true);
         verify(userRepository).findAllByOrderByEloRatingDescUsernameAsc();
+    }
+
+    @Test
+    void getUsersOrderedByEloRating_withDailyRankChanges() {
+        // Given
+        User climber = User.builder()
+                .firebaseUid("user-1")
+                .username("climber")
+                .email("climber@example.com")
+                .eloRating(1300)
+                .build();
+        User steady = User.builder()
+                .firebaseUid("user-2")
+                .username("steady")
+                .email("steady@example.com")
+                .eloRating(1250)
+                .build();
+        User descending = User.builder()
+                .firebaseUid("user-3")
+                .username("descending")
+                .email("descending@example.com")
+                .eloRating(1200)
+                .build();
+        when(userRepository.findAllByOrderByEloRatingDescUsernameAsc())
+                .thenReturn(List.of(climber, steady, descending));
+        when(puzzleAttemptRepository.findDailyEloChangesSince(any(LocalDateTime.class)))
+                .thenReturn(List.of(
+                        dailyEloChange("user-1", 350L),
+                        dailyEloChange("user-3", -100L)
+                ));
+
+        // When
+        List<UserLeaderboardEntryDTO> result = userService.getUsersOrderedByEloRating("user-1");
+
+        // Then
+        assertThat(result)
+                .extracting(UserLeaderboardEntryDTO::username)
+                .containsExactly("climber", "steady", "descending");
+        assertThat(result)
+                .extracting(UserLeaderboardEntryDTO::dailyRankChange)
+                .containsExactly(2, 0, -2);
+        assertThat(result)
+                .extracting(UserLeaderboardEntryDTO::currentUser)
+                .containsExactly(true, false, false);
     }
 
     @Test
@@ -224,5 +275,19 @@ class UserServiceTest {
         // Then
         assertThat(result).isEqualTo(3L);
         verify(puzzleAttemptRepository).countSuccessfulByFirebaseUid("user-1");
+    }
+
+    private PuzzleAttemptRepository.UserDailyEloChange dailyEloChange(String firebaseUid, Long eloChange) {
+        return new PuzzleAttemptRepository.UserDailyEloChange() {
+            @Override
+            public String getFirebaseUid() {
+                return firebaseUid;
+            }
+
+            @Override
+            public Long getEloChange() {
+                return eloChange;
+            }
+        };
     }
 }

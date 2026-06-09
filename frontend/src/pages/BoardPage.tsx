@@ -13,7 +13,6 @@ type PromotionPiece = 'b' | 'n' | 'r' | 'q'
 
 type BoardPageProps = {
   isLoading: boolean
-  userEmail?: string | null
   onOpenProfile: () => void
   onOpenAbout: () => void
   onSignOut: () => Promise<void>
