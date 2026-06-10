@@ -2,7 +2,7 @@ import type {CSSProperties, ReactNode} from 'react'
 import {useEffect, useRef, useState} from 'react'
 import type {Square} from 'chess.js'
 import {Chess} from 'chess.js'
-import {Chessboard} from 'react-chessboard'
+import {Chessboard, defaultPieces} from 'react-chessboard'
 import {fetchWithAuth} from '../api/apiClient'
 import appMark from '../assets/logo.png'
 import {AboutLink} from '../components/AboutLink'
@@ -10,6 +10,7 @@ import {Leaderboard} from '../components/Leaderboard'
 
 type ChessColor = 'w' | 'b'
 type PromotionPiece = 'b' | 'n' | 'r' | 'q'
+type PromotionPieceType = 'wB' | 'wN' | 'wR' | 'wQ' | 'bB' | 'bN' | 'bR' | 'bQ'
 
 type BoardPageProps = {
   isLoading: boolean
@@ -61,6 +62,20 @@ type SurrenderPuzzleResponseDTO = {
 }
 
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
+const promotionPieceTypes: Record<ChessColor, Record<PromotionPiece, PromotionPieceType>> = {
+  w: {
+    b: 'wB',
+    n: 'wN',
+    r: 'wR',
+    q: 'wQ',
+  },
+  b: {
+    b: 'bB',
+    n: 'bN',
+    r: 'bR',
+    q: 'bQ',
+  },
+}
 const INITIAL_MOVE_DELAY_MS = 1200
 const INCORRECT_MOVE_FEEDBACK_MS = 650
 const CORRECT_MOVE_FEEDBACK_MS = 650
@@ -88,8 +103,18 @@ const getPieceLabel = (piece: PromotionPiece) => {
   return piece === 'q' ? 'Queen' : piece === 'r' ? 'Rook' : piece === 'b' ? 'Bishop' : 'Knight'
 }
 
-const getPieceCode = (color: ChessColor, piece: PromotionPiece) => {
-  return `${color}${piece.toUpperCase()}`
+const getPromotionPieceType = (color: ChessColor, piece: PromotionPiece) => {
+  return promotionPieceTypes[color][piece]
+}
+
+const renderPromotionPiece = (color: ChessColor, piece: PromotionPiece) => {
+  const PromotionPieceSvg = defaultPieces[getPromotionPieceType(color, piece)]
+
+  return (
+    <span className="promotion-piece-visual" aria-hidden="true">
+      <PromotionPieceSvg />
+    </span>
+  )
 }
 
 const formatEloChange = (eloChange: number) => {
@@ -674,7 +699,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
                     onClick={() => handlePromotionChoice(promotion)}
                     aria-label={`Promote to ${getPieceLabel(promotion)}`}
                   >
-                    <span className="promotion-piece-code">{getPieceCode(pendingPromotion.color, promotion)}</span>
+                    {renderPromotionPiece(pendingPromotion.color, promotion)}
                     <span className="promotion-label">{getPieceLabel(promotion)}</span>
                   </button>
                 ))}

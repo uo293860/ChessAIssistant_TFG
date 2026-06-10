@@ -820,11 +820,11 @@
   color: #111111;
 }
 
-.promotion-piece-code {
-  font-size: 1.3rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.promotion-piece-visual {
+  display: inline-grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
 }
 
 .promotion-label {
