@@ -35,7 +35,7 @@ class EloServiceTest {
         int newElo = eloService.calculateNewPlayerElo(playerElo, puzzleElo, hintsUsed, failedAttempts);
 
         // Then
-        assertThat(newElo).isEqualTo(992);
+        assertThat(newElo).isEqualTo(997);
     }
 
     @Test
