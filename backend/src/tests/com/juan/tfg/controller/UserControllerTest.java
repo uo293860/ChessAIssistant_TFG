@@ -4,12 +4,15 @@ import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.EloHistoryPointDTO;
 import com.juan.tfg.model.dto.UserLeaderboardEntryDTO;
 import com.juan.tfg.model.dto.UserProfileDTO;
+import com.juan.tfg.model.dto.UserUsernameUpdateRequestDTO;
 import com.juan.tfg.service.UserService;
+import com.juan.tfg.service.exception.DuplicateUsernameException;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +20,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class UserControllerTest {
@@ -81,6 +85,72 @@ class UserControllerTest {
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isEqualTo(leaderboard);
+    }
+
+    @Test
+    void updateCurrentUsername_withValidUsername() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .username("new-player")
+                .email("player@example.com")
+                .eloRating(1016)
+                .build();
+        when(userService.updateUsername("user-1", "New Player"))
+                .thenReturn(user);
+        when(userService.countPuzzleAttempts("user-1")).thenReturn(4L);
+        when(userService.countSolvedPuzzles("user-1")).thenReturn(3L);
+        when(userService.getEloHistory("user-1")).thenReturn(List.of());
+
+        // When
+        ResponseEntity<UserProfileDTO> response = userController.updateCurrentUsername(
+                "user-1",
+                new UserUsernameUpdateRequestDTO("New Player")
+        );
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().username()).isEqualTo("new-player");
+        verify(userService).updateUsername("user-1", "New Player");
+    }
+
+    @Test
+    void updateCurrentUsername_withInvalidUsername() {
+        // Given
+        when(userService.updateUsername("user-1", "!!!"))
+                .thenThrow(new IllegalArgumentException("Username must include at least one letter or number."));
+
+        // When
+        ThrowingCallable action = () -> userController.updateCurrentUsername(
+                "user-1",
+                new UserUsernameUpdateRequestDTO("!!!")
+        );
+
+        // Then
+        assertThatThrownBy(action)
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting("statusCode")
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void updateCurrentUsername_withDuplicateUsername() {
+        // Given
+        when(userService.updateUsername("user-1", "taken"))
+                .thenThrow(new DuplicateUsernameException("Username is already in use."));
+
+        // When
+        ThrowingCallable action = () -> userController.updateCurrentUsername(
+                "user-1",
+                new UserUsernameUpdateRequestDTO("taken")
+        );
+
+        // Then
+        assertThatThrownBy(action)
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting("statusCode")
+                .isEqualTo(HttpStatus.CONFLICT);
     }
 
     @Test

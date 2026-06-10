@@ -11,12 +11,14 @@ import com.juan.tfg.model.dto.EloHistoryPointDTO;
 import com.juan.tfg.model.dto.UserLeaderboardEntryDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.UserRepository;
+import com.juan.tfg.service.exception.DuplicateUsernameException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
@@ -33,6 +35,10 @@ public class UserService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private static final int MAX_USERNAME_LENGTH = 50;
+    private static final int RANDOM_USERNAME_SUFFIX_DIGITS = 6;
+    private static final int RANDOM_USERNAME_SUFFIX_BOUND = 1_000_000;
+    private static final int MAX_USERNAME_GENERATION_ATTEMPTS = 20;
+    private static final SecureRandom USERNAME_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final FirebaseApp firebaseApp;
@@ -51,8 +57,9 @@ public class UserService {
             return existingUser.get();
         }
 
-        String email = resolveEmail(firebaseToken.getEmail(), firebaseToken.getUid());
-        String username = resolveUniqueUsername(firebaseToken.getName(), email, firebaseToken.getUid());
+        String firebaseEmail = firebaseToken.getEmail();
+        String email = resolveEmail(firebaseEmail, firebaseToken.getUid());
+        String username = resolveUniqueUsername(firebaseToken.getName(), firebaseEmail);
         return saveNewUser(firebaseToken.getUid(), email, username);
     }
 
@@ -61,6 +68,23 @@ public class UserService {
         return puzzleAttemptRepository.findEloHistoryByUserId(firebaseUid).stream()
                 .map(this::toEloHistoryPointDTO)
                 .toList();
+    }
+
+    @Transactional
+    public User updateUsername(String firebaseUid, String requestedUsername) {
+        User user = getOrCreateUser(firebaseUid);
+        String username = validateRequestedUsername(requestedUsername);
+
+        if (username.equals(user.getUsername())) {
+            return user;
+        }
+
+        if (userRepository.existsByUsernameAndFirebaseUidNot(username, firebaseUid)) {
+            throw new DuplicateUsernameException("Username is already in use.");
+        }
+
+        user.setUsername(username);
+        return userRepository.save(user);
     }
 
     @Transactional(readOnly = true)
@@ -142,8 +166,9 @@ public class UserService {
     private User createUserFromFirebase(String firebaseUid) {
         try {
             UserRecord firebaseUser = FirebaseAuth.getInstance(firebaseApp).getUser(firebaseUid);
-            String email = resolveEmail(firebaseUser.getEmail(), firebaseUid);
-            String username = resolveUniqueUsername(firebaseUser.getDisplayName(), email, firebaseUid);
+            String firebaseEmail = firebaseUser.getEmail();
+            String email = resolveEmail(firebaseEmail, firebaseUid);
+            String username = resolveUniqueUsername(firebaseUser.getDisplayName(), firebaseEmail);
             return saveNewUser(firebaseUser.getUid(), email, username);
         } catch (FirebaseAuthException e) {
             throw new IllegalStateException("Unable to verify Firebase user.", e);
@@ -170,25 +195,46 @@ public class UserService {
         return firebaseUid + "@firebase.local";
     }
 
-    private String resolveUniqueUsername(String displayName, String email, String firebaseUid) {
-        String baseUsername = normalizeUsername(displayName);
-
-        if (baseUsername.isBlank()) {
-            baseUsername = normalizeUsername(email.substring(0, email.indexOf('@')));
-        }
-
-        if (baseUsername.isBlank()) {
-            baseUsername = "user";
-        }
-
+    private String resolveUniqueUsername(String displayName, String email) {
+        String baseUsername = resolveBaseUsername(displayName, email);
         String username = truncate(baseUsername, MAX_USERNAME_LENGTH);
 
         if (!userRepository.existsByUsername(username)) {
             return username;
         }
 
-        String suffix = "-" + firebaseUid.substring(0, Math.min(firebaseUid.length(), 8)).toLowerCase(Locale.ROOT);
-        return truncate(baseUsername, MAX_USERNAME_LENGTH - suffix.length()) + suffix;
+        return resolveRandomizedUsername(baseUsername);
+    }
+
+    private String resolveBaseUsername(String displayName, String email) {
+        String baseUsername = normalizeUsername(displayName);
+
+        if (baseUsername.isBlank() && email != null && email.contains("@")) {
+            baseUsername = normalizeUsername(email.substring(0, email.indexOf('@')));
+        }
+
+        if (baseUsername.isBlank()) {
+            return "user";
+        }
+
+        return baseUsername;
+    }
+
+    private String resolveRandomizedUsername(String baseUsername) {
+        for (int attempt = 0; attempt < MAX_USERNAME_GENERATION_ATTEMPTS; attempt++) {
+            String suffix = "-" + randomNumericSuffix();
+            String candidate = truncate(baseUsername, MAX_USERNAME_LENGTH - suffix.length()) + suffix;
+
+            if (!userRepository.existsByUsername(candidate)) {
+                return candidate;
+            }
+        }
+
+        throw new IllegalStateException("Unable to generate a unique username.");
+    }
+
+    private String randomNumericSuffix() {
+        return String.format(Locale.ROOT, "%0" + RANDOM_USERNAME_SUFFIX_DIGITS + "d", USERNAME_RANDOM.nextInt(RANDOM_USERNAME_SUFFIX_BOUND));
     }
 
     private String normalizeUsername(String value) {
@@ -201,6 +247,20 @@ public class UserService {
                 .replaceAll("[^a-z0-9._-]", "-")
                 .replaceAll("-+", "-")
                 .replaceAll("^-|-$", "");
+    }
+
+    private String validateRequestedUsername(String requestedUsername) {
+        String username = normalizeUsername(requestedUsername);
+
+        if (username.isBlank()) {
+            throw new IllegalArgumentException("Username must include at least one letter or number.");
+        }
+
+        if (username.length() > MAX_USERNAME_LENGTH) {
+            throw new IllegalArgumentException("Username must be 50 characters or fewer.");
+        }
+
+        return username;
     }
 
     private String truncate(String value, int maxLength) {

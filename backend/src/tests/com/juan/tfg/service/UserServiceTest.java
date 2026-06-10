@@ -9,6 +9,7 @@ import com.juan.tfg.model.dto.EloHistoryPointDTO;
 import com.juan.tfg.model.dto.UserLeaderboardEntryDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.UserRepository;
+import com.juan.tfg.service.exception.DuplicateUsernameException;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,7 @@ class UserServiceTest {
         when(firebaseToken.getEmail()).thenReturn(null);
         when(firebaseToken.getName()).thenReturn(null);
         when(userRepository.findById("UID987654321")).thenReturn(Optional.empty());
-        when(userRepository.existsByUsername("uid987654321")).thenReturn(false);
+        when(userRepository.existsByUsername("user")).thenReturn(false);
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
@@ -92,7 +93,7 @@ class UserServiceTest {
 
         // Then
         assertThat(result.getEmail()).isEqualTo("UID987654321@firebase.local");
-        assertThat(result.getUsername()).isEqualTo("uid987654321");
+        assertThat(result.getUsername()).isEqualTo("user");
     }
 
     @Test
@@ -110,7 +111,10 @@ class UserServiceTest {
         User result = userService.getOrCreateUser(firebaseToken);
 
         // Then
-        assertThat(result.getUsername()).isEqualTo("player-abc12345");
+        assertThat(result.getUsername())
+                .startsWith("player-")
+                .matches("player-\\d{6}")
+                .doesNotContain("abc12345");
     }
 
     @Test
@@ -140,6 +144,85 @@ class UserServiceTest {
         assertThat(result.getFirst().puzzleRating()).isEqualTo(1200);
         assertThat(result.getFirst().eloChange()).isEqualTo(12);
         assertThat(result.getFirst().resultingElo()).isEqualTo(1012);
+    }
+
+    @Test
+    void updateUsername_withValidUsername() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .username("old-player")
+                .email("player@example.com")
+                .build();
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsernameAndFirebaseUidNot("new-player", "user-1")).thenReturn(false);
+        when(userRepository.save(user)).thenReturn(user);
+
+        // When
+        User result = userService.updateUsername("user-1", "New Player!");
+
+        // Then
+        assertThat(result.getUsername()).isEqualTo("new-player");
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void updateUsername_withSameUsername() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .username("player")
+                .email("player@example.com")
+                .build();
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+
+        // When
+        User result = userService.updateUsername("user-1", "player");
+
+        // Then
+        assertThat(result).isSameAs(user);
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUsername_withInvalidUsername() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .username("player")
+                .email("player@example.com")
+                .build();
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+
+        // When
+        ThrowingCallable action = () -> userService.updateUsername("user-1", "!!!");
+
+        // Then
+        assertThatThrownBy(action)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Username must include at least one letter or number.");
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void updateUsername_withDuplicateUsername() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .username("player")
+                .email("player@example.com")
+                .build();
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(userRepository.existsByUsernameAndFirebaseUidNot("taken", "user-1")).thenReturn(true);
+
+        // When
+        ThrowingCallable action = () -> userService.updateUsername("user-1", "taken");
+
+        // Then
+        assertThatThrownBy(action)
+                .isInstanceOf(DuplicateUsernameException.class)
+                .hasMessage("Username is already in use.");
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

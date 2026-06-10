@@ -1,6 +1,8 @@
+import type {FormEvent} from 'react'
 import {useEffect, useState} from 'react'
 import {CartesianGrid, Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts'
-import {fetchWithAuth} from '../api/apiClient'
+import {fetchCurrentUserProfile, updateCurrentUsername} from '../api/users'
+import type {EloHistoryPointDTO, UserProfileDTO} from '../api/users'
 import appMark from '../assets/logo.png'
 import {AboutLink} from '../components/AboutLink'
 
@@ -9,24 +11,6 @@ type ProfilePageProps = {
   onBackToBoard: () => void
   onOpenAbout: () => void
   onSignOut: () => Promise<void>
-}
-
-type UserProfileDTO = {
-  firebaseUid: string
-  username: string
-  email: string
-  eloRating: number
-  puzzlesAttempted: number
-  puzzlesSolved: number
-  eloHistory: EloHistoryPointDTO[]
-}
-
-type EloHistoryPointDTO = {
-  attemptId: number
-  attemptDate: string
-  puzzleRating: number
-  eloChange: number
-  resultingElo: number
 }
 
 type SuccessRateDonutProps = {
@@ -100,6 +84,11 @@ const buildEloChartData = (history: EloHistoryPointDTO[]): EloChartPoint[] => {
 export function ProfilePage({ fallbackEmail, onBackToBoard, onOpenAbout, onSignOut }: ProfilePageProps) {
   const [profile, setProfile] = useState<UserProfileDTO | null>(null)
   const [isProfileLoading, setIsProfileLoading] = useState(true)
+  const [isEditingUsername, setIsEditingUsername] = useState(false)
+  const [usernameDraft, setUsernameDraft] = useState('')
+  const [isUsernameSaving, setIsUsernameSaving] = useState(false)
+  const [usernameFeedback, setUsernameFeedback] = useState('')
+  const [usernameError, setUsernameError] = useState('')
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -108,13 +97,9 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onOpenAbout, onSignO
       setError('')
 
       try {
-        const response = await fetchWithAuth('/api/users/me')
-
-        if (!response.ok) {
-          throw new Error('Unable to load your profile.')
-        }
-
-        setProfile((await response.json()) as UserProfileDTO)
+        const loadedProfile = await fetchCurrentUserProfile()
+        setProfile(loadedProfile)
+        setUsernameDraft(loadedProfile.username)
       } catch (profileError) {
         setError(profileError instanceof Error ? profileError.message : 'Unable to load your profile.')
       } finally {
@@ -134,6 +119,56 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onOpenAbout, onSignO
   const eloHistory = profile?.eloHistory ?? []
   const eloChartData = buildEloChartData(eloHistory)
   const latestEloChange = eloHistory.at(-1)?.eloChange ?? 0
+
+  const handleStartUsernameEdit = () => {
+    setUsernameDraft(username)
+    setUsernameFeedback('')
+    setUsernameError('')
+    setIsEditingUsername(true)
+  }
+
+  const handleCancelUsernameEdit = () => {
+    setUsernameDraft(username)
+    setUsernameError('')
+    setIsEditingUsername(false)
+  }
+
+  const handleUsernameSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setUsernameFeedback('')
+    setUsernameError('')
+
+    const nextUsername = usernameDraft.trim()
+
+    if (!nextUsername) {
+      setUsernameError('Enter a username.')
+      return
+    }
+
+    if (nextUsername.length > 50) {
+      setUsernameError('Username must be 50 characters or fewer.')
+      return
+    }
+
+    if (nextUsername === username) {
+      setIsEditingUsername(false)
+      return
+    }
+
+    setIsUsernameSaving(true)
+
+    try {
+      const updatedProfile = await updateCurrentUsername(nextUsername)
+      setProfile(updatedProfile)
+      setUsernameDraft(updatedProfile.username)
+      setIsEditingUsername(false)
+      setUsernameFeedback('Username updated.')
+    } catch (usernameUpdateError) {
+      setUsernameError(usernameUpdateError instanceof Error ? usernameUpdateError.message : 'Unable to update your username.')
+    } finally {
+      setIsUsernameSaving(false)
+    }
+  }
 
   return (
     <main className="profile-shell">
@@ -163,9 +198,57 @@ export function ProfilePage({ fallbackEmail, onBackToBoard, onOpenAbout, onSignO
               <span className="profile-avatar" aria-hidden="true">
                 {username.slice(0, 1).toUpperCase()}
               </span>
-              <div>
-                <p className="panel-title">Username</p>
-                <strong>{username}</strong>
+              <div className="profile-username-block">
+                <div className="profile-username-heading">
+                  <p className="panel-title">Username</p>
+                  {!isEditingUsername ? (
+                    <button
+                      type="button"
+                      className="inline-action"
+                      onClick={handleStartUsernameEdit}
+                      disabled={isProfileLoading}
+                    >
+                      Modify
+                    </button>
+                  ) : null}
+                </div>
+
+                {isEditingUsername ? (
+                  <form className="username-edit-form" onSubmit={handleUsernameSubmit}>
+                    <label htmlFor="profile-username-input">New username</label>
+                    <input
+                      id="profile-username-input"
+                      type="text"
+                      value={usernameDraft}
+                      onChange={(event) => setUsernameDraft(event.target.value)}
+                      maxLength={50}
+                      autoComplete="nickname"
+                      aria-invalid={Boolean(usernameError)}
+                      disabled={isUsernameSaving}
+                      required
+                    />
+                    <div className="username-edit-actions">
+                      <button type="submit" className="primary-action" disabled={isUsernameSaving}>
+                        {isUsernameSaving ? 'Saving...' : 'Save'}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-action"
+                        onClick={handleCancelUsernameEdit}
+                        disabled={isUsernameSaving}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <strong>{username}</strong>
+                )}
+
+                <div className="username-message-region" aria-live="polite">
+                  {usernameFeedback ? <p className="username-feedback success">{usernameFeedback}</p> : null}
+                  {usernameError ? <p className="username-feedback error">{usernameError}</p> : null}
+                </div>
               </div>
             </div>
 

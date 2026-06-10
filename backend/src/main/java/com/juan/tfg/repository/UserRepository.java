@@ -9,5 +9,7 @@ public interface UserRepository extends JpaRepository<User, String> {
 
     boolean existsByUsername(String username);
 
+    boolean existsByUsernameAndFirebaseUidNot(String username, String firebaseUid);
+
     List<User> findAllByOrderByEloRatingDescUsernameAsc();
 }

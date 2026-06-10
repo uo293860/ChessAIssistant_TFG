@@ -170,7 +170,8 @@
 .primary-action,
 .secondary-action,
 .google-action,
-.promotion-action {
+.promotion-action,
+.inline-action {
   border: 0;
   border-radius: 8px;
   font: inherit;
@@ -265,13 +266,15 @@
 .primary-action:hover,
 .secondary-action:hover,
 .google-action:hover,
-.promotion-action:hover {
+.promotion-action:hover,
+.inline-action:hover {
   transform: translateY(-1px);
 }
 
 .primary-action:disabled,
 .secondary-action:disabled,
-.google-action:disabled {
+.google-action:disabled,
+.inline-action:disabled {
   cursor: not-allowed;
   opacity: 0.6;
   transform: none;
@@ -1075,6 +1078,94 @@
   display: flex;
   align-items: center;
   gap: 18px;
+}
+
+.profile-username-block {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-username-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-username-heading .panel-title {
+  margin-bottom: 0;
+}
+
+.inline-action {
+  min-height: 34px;
+  padding: 7px 11px;
+  background: #111111;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.username-edit-form {
+  display: grid;
+  gap: 10px;
+}
+
+.username-edit-form label {
+  color: #4c4c4c;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.username-edit-form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111111;
+  font: inherit;
+}
+
+.username-edit-form input:focus {
+  outline: 2px solid rgba(17, 17, 17, 0.12);
+  border-color: #111111;
+}
+
+.username-edit-form input[aria-invalid='true']:not(:focus) {
+  border-color: #8a1f1f;
+}
+
+.username-edit-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.username-edit-actions .primary-action,
+.username-edit-actions .secondary-action {
+  min-height: 42px;
+  padding: 10px 12px;
+}
+
+.username-message-region:empty {
+  display: none;
+}
+
+.username-feedback {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.username-feedback.success {
+  color: #176c35;
+}
+
+.username-feedback.error {
+  color: #8a1f1f;
 }
 
 .profile-avatar {
