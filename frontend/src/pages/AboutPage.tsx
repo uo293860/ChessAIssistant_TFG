@@ -33,7 +33,7 @@ const faqItems: FaqItem[] = [
   {
     question: 'How does Elo work?',
     answer:
-      'The board shows the maximum Elo gain for solving the puzzle cleanly. Mistakes and hints reduce the final result, and the final Elo variation is shown after completion.',
+      'The board shows the maximum Elo gain for solving the puzzle cleanly. Mistakes and hints reduce the final result, and surrendering applies a failed result before a new puzzle can be loaded.',
   },
   {
     question: 'Where can I review my progress?',

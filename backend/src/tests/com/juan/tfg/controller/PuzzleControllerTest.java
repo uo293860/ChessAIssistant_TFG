@@ -3,6 +3,8 @@ package com.juan.tfg.controller;
 import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationRequestDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
+import com.juan.tfg.model.dto.PuzzleSurrenderRequestDTO;
+import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
 import com.juan.tfg.service.PuzzleService;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
@@ -169,5 +171,50 @@ class PuzzleControllerTest {
         assertThatThrownBy(action)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Verification failed");
+    }
+
+    @Test
+    void surrenderPuzzle() {
+        // Given
+        PuzzleSurrenderRequestDTO request = new PuzzleSurrenderRequestDTO(10L, "puzzle-1");
+        PuzzleSurrenderResponseDTO surrender = new PuzzleSurrenderResponseDTO(true, 984, -16);
+        when(puzzleService.surrenderPuzzle("user-1", 10L, "puzzle-1")).thenReturn(Optional.of(surrender));
+
+        // When
+        ResponseEntity<PuzzleSurrenderResponseDTO> response = puzzleController.surrenderPuzzle("user-1", request);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(surrender);
+    }
+
+    @Test
+    void surrenderPuzzle_withBlankFirebaseUid() {
+        // Given
+        PuzzleSurrenderRequestDTO request = new PuzzleSurrenderRequestDTO(10L, "puzzle-1");
+
+        // When
+        ResponseEntity<PuzzleSurrenderResponseDTO> response = puzzleController.surrenderPuzzle(" ", request);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(puzzleService, never()).surrenderPuzzle(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void surrenderPuzzle_withServiceReturningEmpty() {
+        // Given
+        PuzzleSurrenderRequestDTO request = new PuzzleSurrenderRequestDTO(10L, "missing-puzzle");
+        when(puzzleService.surrenderPuzzle("user-1", 10L, "missing-puzzle")).thenReturn(Optional.empty());
+
+        // When
+        ResponseEntity<PuzzleSurrenderResponseDTO> response = puzzleController.surrenderPuzzle("user-1", request);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

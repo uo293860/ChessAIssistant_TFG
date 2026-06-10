@@ -6,6 +6,7 @@ import com.juan.tfg.model.PuzzleSession;
 import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
+import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.PuzzleRepository;
 import com.juan.tfg.repository.PuzzleSessionRepository;
@@ -93,6 +94,20 @@ public class PuzzleService {
                 .map(session -> buildVerificationResponse(session, move));
     }
 
+    @Transactional
+    public Optional<PuzzleSurrenderResponseDTO> surrenderPuzzle(
+            String firebaseUid,
+            Long sessionId,
+            String puzzleId
+    ) {
+        if (firebaseUid == null || firebaseUid.isBlank() || sessionId == null || puzzleId == null || puzzleId.isBlank()) {
+            return Optional.empty();
+        }
+
+        return findActiveSession(firebaseUid, sessionId, puzzleId)
+                .map(this::surrenderSession);
+    }
+
     private PuzzleMoveVerificationResponseDTO buildVerificationResponse(
             PuzzleSession session,
             String move
@@ -153,6 +168,22 @@ public class PuzzleService {
     }
 
     private EloUpdate saveCompletedAttemptAndUpdateUserElo(PuzzleSession session) {
+        return saveAttemptAndUpdateUserElo(session, true);
+    }
+
+    private PuzzleSurrenderResponseDTO surrenderSession(PuzzleSession session) {
+        EloUpdate eloUpdate = saveAttemptAndUpdateUserElo(session, false);
+        session.setCompleted(true);
+        puzzleSessionRepository.save(session);
+
+        return new PuzzleSurrenderResponseDTO(
+                true,
+                eloUpdate.newElo(),
+                eloUpdate.eloChange()
+        );
+    }
+
+    private EloUpdate saveAttemptAndUpdateUserElo(PuzzleSession session, boolean solved) {
         User user = userRepository.findById(session.getUser().getFirebaseUid())
                 .orElseThrow(() -> new IllegalStateException("Authenticated user was not found."));
         Puzzle puzzle = session.getPuzzle();
@@ -160,13 +191,15 @@ public class PuzzleService {
         int failedAttempts = session.getFailedAttempts();
 
         int currentElo = resolveUserElo(user);
-        int newElo = eloService.calculateNewPlayerElo(currentElo, puzzle.getRating(), hintsUsed, failedAttempts);
+        int newElo = solved
+                ? eloService.calculateNewPlayerElo(currentElo, puzzle.getRating(), hintsUsed, failedAttempts)
+                : eloService.calculateNewPlayerEloForFailedPuzzle(currentElo, puzzle.getRating());
         int eloChange = newElo - currentElo;
 
         PuzzleAttempt puzzleAttempt = PuzzleAttempt.builder()
                 .user(user)
                 .puzzle(puzzle)
-                .isSuccessful(failedAttempts == 0)
+                .isSuccessful(solved && failedAttempts == 0)
                 .hintsUsed(hintsUsed)
                 .failedAttempts(failedAttempts)
                 .eloChange(eloChange)

@@ -262,6 +262,12 @@
   border: 1px solid #d4d4d4;
 }
 
+.secondary-action.surrender-action {
+  background: #f8e8e8;
+  color: #8a1f1f;
+  border-color: #efb9b9;
+}
+
 .mode-switch button:hover,
 .primary-action:hover,
 .secondary-action:hover,

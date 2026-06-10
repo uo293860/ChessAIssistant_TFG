@@ -261,6 +261,59 @@ class PuzzleServiceTest {
     }
 
     @Test
+    void surrenderPuzzle_withActiveSessionUpdatesEloAsFailedAttempt() {
+        // Given
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        session.setHintsUsed(1);
+        session.setFailedAttempts(1);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(eloService.calculateNewPlayerEloForFailedPuzzle(1000, 1000)).thenReturn(984);
+        when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        var result = puzzleService.surrenderPuzzle("user-1", 10L, "puzzle-1");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().puzzleCompleted()).isTrue();
+        assertThat(result.get().newElo()).isEqualTo(984);
+        assertThat(result.get().eloChange()).isEqualTo(-16);
+        assertThat(session.isCompleted()).isTrue();
+        assertThat(user.getEloRating()).isEqualTo(984);
+
+        ArgumentCaptor<PuzzleAttempt> attemptCaptor = ArgumentCaptor.forClass(PuzzleAttempt.class);
+        verify(puzzleAttemptRepository).save(attemptCaptor.capture());
+        assertThat(attemptCaptor.getValue().getIsSuccessful()).isFalse();
+        assertThat(attemptCaptor.getValue().getHintsUsed()).isEqualTo(1);
+        assertThat(attemptCaptor.getValue().getFailedAttempts()).isEqualTo(1);
+        verify(eloService).calculateNewPlayerEloForFailedPuzzle(1000, 1000);
+        verify(userRepository).save(user);
+        verify(puzzleSessionRepository).save(session);
+    }
+
+    @Test
+    void surrenderPuzzle_withCompletedSessionReturnsEmpty() {
+        // Given
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        session.setCompleted(true);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
+
+        // When
+        var result = puzzleService.surrenderPuzzle("user-1", 10L, "puzzle-1");
+
+        // Then
+        assertThat(result).isEmpty();
+        verify(puzzleAttemptRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     void verifyMove_withSessionCounters() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);

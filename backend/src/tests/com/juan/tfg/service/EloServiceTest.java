@@ -54,6 +54,19 @@ class EloServiceTest {
     }
 
     @Test
+    void calculateNewPlayerEloForFailedPuzzle() {
+        // Given
+        int playerElo = 1000;
+        int puzzleElo = 1000;
+
+        // When
+        int newElo = eloService.calculateNewPlayerEloForFailedPuzzle(playerElo, puzzleElo);
+
+        // Then
+        assertThat(newElo).isEqualTo(984);
+    }
+
+    @Test
     void calculateNewPlayerElo_withHarderPuzzle() {
         // Given
         int playerElo = 1000;

@@ -49,6 +49,17 @@ type VerifyPuzzleMoveResponseDTO = {
   eloChange: number | null
 }
 
+type SurrenderPuzzleRequestDTO = {
+  sessionId: number
+  puzzleId: string
+}
+
+type SurrenderPuzzleResponseDTO = {
+  puzzleCompleted: boolean
+  newElo: number | null
+  eloChange: number | null
+}
+
 const promotionChoices: PromotionPiece[] = ['q', 'r', 'b', 'n']
 const INITIAL_MOVE_DELAY_MS = 1200
 const INCORRECT_MOVE_FEEDBACK_MS = 650
@@ -98,17 +109,21 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   const [revealedHintCount, setRevealedHintCount] = useState(0)
   const [isHintsLoading, setIsHintsLoading] = useState(false)
   const [isVerifyingMove, setIsVerifyingMove] = useState(false)
+  const [isSurrendering, setIsSurrendering] = useState(false)
   const [isReplayingOpponentMove, setIsReplayingOpponentMove] = useState(false)
   const [failedAttempts, setFailedAttempts] = useState(0)
   const [updatedElo, setUpdatedElo] = useState<number | null>(null)
   const [updatedEloChange, setUpdatedEloChange] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
+  const [isPuzzleSurrendered, setIsPuzzleSurrendered] = useState(false)
+  const [puzzleActionError, setPuzzleActionError] = useState<string | null>(null)
   const [incorrectMoveSquare, setIncorrectMoveSquare] = useState<Square | null>(null)
   const [correctMoveSquare, setCorrectMoveSquare] = useState<Square | null>(null)
   const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0)
   const replayTimeoutRef = useRef<number | null>(null)
   const incorrectMoveTimeoutRef = useRef<number | null>(null)
   const correctMoveTimeoutRef = useRef<number | null>(null)
+  const isPuzzleFinished = isPuzzleCompleted || isPuzzleSurrendered
 
   const clearSelection = () => {
     setSelectedSquare(null)
@@ -221,10 +236,33 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     return (await response.json()) as VerifyPuzzleMoveResponseDTO
   }
 
-  const applyPuzzleResult = (puzzleCompleted: boolean, newElo: number | null, eloChange: number | null) => {
-    setIsPuzzleCompleted(puzzleCompleted)
+  const surrenderPuzzle = async (request: SurrenderPuzzleRequestDTO) => {
+    const response = await fetchWithAuth('/api/puzzles/surrender', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    })
+
+    if (!response.ok) {
+      throw new Error('Unable to surrender the puzzle.')
+    }
+
+    return (await response.json()) as SurrenderPuzzleResponseDTO
+  }
+
+  const applyPuzzleResult = (
+    puzzleCompleted: boolean,
+    newElo: number | null,
+    eloChange: number | null,
+    puzzleSurrendered = false
+  ) => {
+    setIsPuzzleCompleted(puzzleCompleted && !puzzleSurrendered)
+    setIsPuzzleSurrendered(puzzleSurrendered)
     setUpdatedElo(newElo)
     setUpdatedEloChange(eloChange)
+    setPuzzleActionError(null)
 
     if (puzzleCompleted && newElo !== null) {
       setLeaderboardRefreshKey((currentKey) => currentKey + 1)
@@ -232,7 +270,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   }
 
   const tryPuzzleMove = async (from: Square, to: Square, promotion?: PromotionPiece) => {
-    if (!puzzle || isPuzzleCompleted) {
+    if (!puzzle || isPuzzleFinished) {
       return false
     }
 
@@ -290,6 +328,37 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     }
   }
 
+  const surrenderCurrentPuzzle = async () => {
+    if (
+      !puzzle ||
+      isPuzzleFinished ||
+      isPuzzleLoading ||
+      isReplayingInitialMove ||
+      isReplayingOpponentMove ||
+      isVerifyingMove ||
+      isSurrendering
+    ) {
+      return
+    }
+
+    clearSelection()
+    setIsSurrendering(true)
+    setPuzzleActionError(null)
+
+    try {
+      const surrender = await surrenderPuzzle({
+        sessionId: puzzle.sessionId,
+        puzzleId: puzzle.id,
+      })
+      applyPuzzleResult(surrender.puzzleCompleted, surrender.newElo, surrender.eloChange, true)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to surrender the puzzle.'
+      setPuzzleActionError(message)
+    } finally {
+      setIsSurrendering(false)
+    }
+  }
+
   const loadRandomPuzzle = async () => {
     clearReplayTimeout()
     clearIncorrectMoveTimeout()
@@ -298,6 +367,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     setIsReplayingInitialMove(false)
     setIsReplayingOpponentMove(false)
     setIsVerifyingMove(false)
+    setIsSurrendering(false)
     setIncorrectMoveSquare(null)
     setCorrectMoveSquare(null)
     setPuzzleHints([])
@@ -307,6 +377,8 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     setUpdatedElo(null)
     setUpdatedEloChange(null)
     setIsPuzzleCompleted(false)
+    setIsPuzzleSurrendered(false)
+    setPuzzleActionError(null)
     clearSelection()
 
     const response = await fetchWithAuth('/api/puzzles/random')
@@ -321,7 +393,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   }
 
   const loadHints = async () => {
-    if (!puzzle) {
+    if (!puzzle || isPuzzleFinished) {
       return
     }
 
@@ -369,7 +441,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   }
 
   const handleSquareClick = ({ square }: { square: string }) => {
-    if (isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted) {
+    if (isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleFinished) {
       return
     }
 
@@ -414,7 +486,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     sourceSquare: string
     targetSquare: string | null
   }) => {
-    if (!targetSquare || isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted) {
+    if (!targetSquare || isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleFinished) {
       return false
     }
 
@@ -475,10 +547,14 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   }
 
   const boardInteractionDisabled =
-    isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isPuzzleCompleted
+    isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isSurrendering || isPuzzleFinished
   const displayedHints = puzzleHints.slice(0, revealedHintCount)
   const areHintsExhausted = puzzleHints.length > 0 && revealedHintCount >= Math.min(puzzleHints.length, MAX_HINT_COUNT)
-  const hasCompletedEloResult = isPuzzleCompleted && updatedElo !== null && updatedEloChange !== null
+  const hasFinalEloResult = isPuzzleFinished && updatedElo !== null && updatedEloChange !== null
+  const puzzleActionLabel = isPuzzleFinished ? 'New puzzle' : isSurrendering ? 'Surrendering...' : 'Surrender'
+  const puzzleActionDisabled = isPuzzleFinished
+    ? isPuzzleLoading
+    : !puzzle || isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isSurrendering
 
   return (
     <main className="board-shell">
@@ -548,6 +624,10 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
                   ? 'Waiting for the opponent reply.'
                 : isVerifyingMove
                   ? 'Verifying your move with the backend.'
+                : isSurrendering
+                  ? 'Surrendering the puzzle and updating your Elo.'
+                : isPuzzleSurrendered
+                  ? 'Puzzle surrendered. Elo has been updated as a failed attempt. Load a new puzzle to continue.'
                 : isPuzzleCompleted
                   ? failedAttempts > 0
                     ? updatedElo === null
@@ -564,7 +644,8 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
                       ? 'Fetching a random puzzle from the backend.'
                       : 'Drag a piece or click a square to see legal moves.'}
             </p>
-            {hasCompletedEloResult ? (
+            {puzzleActionError ? <p className="feedback error">{puzzleActionError}</p> : null}
+            {hasFinalEloResult ? (
               <div className="completion-elo-summary" aria-label="Puzzle Elo result">
                 <span className="completion-elo-item">
                   <span>New Elo</span>
@@ -605,8 +686,13 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
           ) : null}
 
           <div>
-            <button type="button" className="secondary-action compact-action" onClick={handleBoardReset}>
-              New puzzle
+            <button
+              type="button"
+              className={`secondary-action compact-action ${isPuzzleFinished ? '' : 'surrender-action'}`}
+              onClick={handlePuzzleAction}
+              disabled={puzzleActionDisabled}
+            >
+              {puzzleActionLabel}
             </button>
           </div>
 
@@ -614,7 +700,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
               type="button"
               className="secondary-action compact-action"
               onClick={askHints}
-              disabled={!puzzle || isHintsLoading || areHintsExhausted}
+              disabled={!puzzle || isHintsLoading || isPuzzleFinished || areHintsExhausted}
           >
             Ask for AIssistance
           </button>
@@ -636,8 +722,13 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     </main>
   )
 
-  function handleBoardReset() {
-    void loadRandomPuzzle()
+  function handlePuzzleAction() {
+    if (isPuzzleFinished) {
+      void loadRandomPuzzle()
+      return
+    }
+
+    void surrenderCurrentPuzzle()
   }
 
   function askHints() {

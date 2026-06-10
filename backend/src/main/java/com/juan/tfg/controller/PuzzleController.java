@@ -3,6 +3,8 @@ package com.juan.tfg.controller;
 import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationRequestDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
+import com.juan.tfg.model.dto.PuzzleSurrenderRequestDTO;
+import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
 import com.juan.tfg.service.PuzzleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -59,6 +61,24 @@ public class PuzzleController {
                         request.sessionId(),
                         request.puzzleId(),
                         request.move()
+                )
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/surrender")
+    public ResponseEntity<PuzzleSurrenderResponseDTO> surrenderPuzzle(
+            @AuthenticationPrincipal String firebaseUid,
+            @RequestBody PuzzleSurrenderRequestDTO request
+    ) {
+        if (firebaseUid == null || firebaseUid.isBlank()) {
+            return ResponseEntity.status(401).build();
+        }
+
+        return puzzleService.surrenderPuzzle(
+                        firebaseUid,
+                        request.sessionId(),
+                        request.puzzleId()
                 )
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
