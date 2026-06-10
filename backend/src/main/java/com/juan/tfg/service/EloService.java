@@ -7,7 +7,7 @@ public class EloService {
 
     private static final int K_FACTOR = 32;
     private static final double PENALTY_PER_HINT = 0.25;
-    private static final double PENALTY_PER_ERROR = 0.50;
+    private static final double PENALTY_PER_ERROR = 0.33;
 
     public int calculateNewPlayerElo(int playerElo, int puzzleElo, int hintsUsed, int failedAttempts) {
         double hintPenalty = hintsUsed * PENALTY_PER_HINT;

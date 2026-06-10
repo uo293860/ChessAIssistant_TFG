@@ -25,8 +25,9 @@ import java.util.Optional;
 public class PuzzleService {
 
     private static final int DEFAULT_ELO = 1000;
-    private static final int PUZZLE_RATING_RANGE = 50;
+    private static final int PUZZLE_RATING_RANGE = 100;
     private static final int MAX_HINT_COUNT = 3;
+    private static final int AUTO_SURRENDER_FAILED_ATTEMPT_THRESHOLD = 0;
 
     private final PuzzleRepository puzzleRepository;
     private final PuzzleAttemptRepository puzzleAttemptRepository;
@@ -38,7 +39,20 @@ public class PuzzleService {
     @Transactional
     public Optional<PuzzleDTO> getRandomPuzzleForUser(String firebaseUid, String theme) {
         return userRepository.findById(firebaseUid)
-                .flatMap(user -> getRandomPuzzleForSession(user, theme));
+                .flatMap(user -> {
+                    autoSurrenderAbandonedFailedSessions(user);
+                    return getRandomPuzzleForSession(user, theme);
+                });
+    }
+
+    private void autoSurrenderAbandonedFailedSessions(User user) {
+        List<PuzzleSession> abandonedSessions = puzzleSessionRepository
+                .findByUserFirebaseUidAndCompletedFalseAndFailedAttemptsGreaterThan(
+                        user.getFirebaseUid(),
+                        AUTO_SURRENDER_FAILED_ATTEMPT_THRESHOLD
+                );
+
+        abandonedSessions.forEach(this::surrenderSession);
     }
 
     private Optional<PuzzleDTO> getRandomPuzzleForSession(User user, String theme) {

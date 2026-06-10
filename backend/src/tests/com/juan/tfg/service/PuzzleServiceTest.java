@@ -49,6 +49,8 @@ class PuzzleServiceTest {
             }
             return session;
         });
+        when(puzzleSessionRepository.findByUserFirebaseUidAndCompletedFalseAndFailedAttemptsGreaterThan(anyString(), anyInt()))
+                .thenReturn(List.of());
         puzzleService = new PuzzleService(
                 puzzleRepository,
                 puzzleAttemptRepository,
@@ -110,6 +112,68 @@ class PuzzleServiceTest {
         // Then
         assertThat(result).isPresent();
         verify(puzzleRepository).findRandomPuzzleByThemeAndRating("mate", 950, 1050);
+    }
+
+    @Test
+    void getRandomPuzzleForUser_autoSurrendersActiveSessionWithMoreThanOneFailedAttempt() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .eloRating(1000)
+                .build();
+        Puzzle abandonedPuzzle = buildPuzzle("abandoned-puzzle", "e2e4 e7e5", 1000);
+        PuzzleSession abandonedSession = buildSession(11L, user, abandonedPuzzle);
+        abandonedSession.setFailedAttempts(2);
+        Puzzle nextPuzzle = buildPuzzle("next-puzzle", "d2d4 d7d5", 980);
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(puzzleSessionRepository.findByUserFirebaseUidAndCompletedFalseAndFailedAttemptsGreaterThan("user-1", 1))
+                .thenReturn(List.of(abandonedSession));
+        when(eloService.calculateNewPlayerEloForFailedPuzzle(1000, 1000)).thenReturn(984);
+        when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(puzzleRepository.findRandomPuzzleByThemeAndRating("fork", 934, 1034)).thenReturn(Optional.of(nextPuzzle));
+
+        // When
+        Optional<PuzzleDTO> result = puzzleService.getRandomPuzzleForUser("user-1", "fork");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().id()).isEqualTo("next-puzzle");
+        assertThat(abandonedSession.isCompleted()).isTrue();
+        assertThat(user.getEloRating()).isEqualTo(984);
+
+        ArgumentCaptor<PuzzleAttempt> attemptCaptor = ArgumentCaptor.forClass(PuzzleAttempt.class);
+        verify(puzzleAttemptRepository).save(attemptCaptor.capture());
+        assertThat(attemptCaptor.getValue().getPuzzle()).isEqualTo(abandonedPuzzle);
+        assertThat(attemptCaptor.getValue().getIsSuccessful()).isFalse();
+        assertThat(attemptCaptor.getValue().getFailedAttempts()).isEqualTo(2);
+        assertThat(attemptCaptor.getValue().getEloChange()).isEqualTo(-16);
+        verify(puzzleRepository).findRandomPuzzleByThemeAndRating("fork", 934, 1034);
+    }
+
+    @Test
+    void getRandomPuzzleForUser_doesNotAutoSurrenderWhenFailureThresholdIsNotReached() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .eloRating(1000)
+                .build();
+        Puzzle nextPuzzle = buildPuzzle("next-puzzle", "d2d4 d7d5", 1000);
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(puzzleRepository.findRandomPuzzleByThemeAndRating("fork", 950, 1050)).thenReturn(Optional.of(nextPuzzle));
+
+        // When
+        Optional<PuzzleDTO> result = puzzleService.getRandomPuzzleForUser("user-1", "fork");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().id()).isEqualTo("next-puzzle");
+        assertThat(user.getEloRating()).isEqualTo(1000);
+        verify(puzzleSessionRepository)
+                .findByUserFirebaseUidAndCompletedFalseAndFailedAttemptsGreaterThan("user-1", 1);
+        verify(puzzleAttemptRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+        verify(puzzleRepository).findRandomPuzzleByThemeAndRating("fork", 950, 1050);
     }
 
     @Test
