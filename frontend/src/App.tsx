@@ -26,6 +26,8 @@ const BOARD_ROUTE: AppRoute = '/board'
 const PROFILE_ROUTE: AppRoute = '/profile'
 const ABOUT_ROUTE: AppRoute = '/about'
 const MIN_PASSWORD_LENGTH = 6
+const PASSWORD_REQUIRES_UPPERCASE = /[A-Z]/
+const PASSWORD_REQUIREMENT_MESSAGE = `Use a password with at least ${MIN_PASSWORD_LENGTH} characters and one capital letter.`
 
 const getFirebaseAuthErrorMessage = (firebaseError: unknown, fallbackMessage: string) => {
   if (!(firebaseError instanceof FirebaseError)) {
@@ -52,7 +54,7 @@ const getFirebaseAuthErrorMessage = (firebaseError: unknown, fallbackMessage: st
     case 'auth/too-many-requests':
       return 'Access is temporarily limited after several failed attempts. Wait a moment and try again.'
     case 'auth/weak-password':
-      return `Use a password with at least ${MIN_PASSWORD_LENGTH} characters and a capital letter.`
+      return PASSWORD_REQUIREMENT_MESSAGE
     case 'auth/operation-not-allowed':
       return 'This sign-in method is not enabled yet. Contact support if the problem continues.'
     default:
@@ -158,8 +160,8 @@ function App() {
       return
     }
 
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Use a password with at least ${MIN_PASSWORD_LENGTH} characters and a capital letter.`)
+    if (password.length < MIN_PASSWORD_LENGTH || !PASSWORD_REQUIRES_UPPERCASE.test(password)) {
+      setError(PASSWORD_REQUIREMENT_MESSAGE)
       return
     }
 
@@ -321,7 +323,7 @@ function App() {
               aria-invalid={Boolean(error)}
               required
             />
-            <small>Minimum {MIN_PASSWORD_LENGTH} characters.</small>
+            <small>Minimum {MIN_PASSWORD_LENGTH} characters and one capital letter.</small>
           </label>
 
           {mode === 'register' ? (
