@@ -33,6 +33,18 @@ type PuzzleDTO = {
   themes: string
   gameUrl: string
   initialMove: string
+  hintEloPenalty: number
+}
+
+type PuzzleHintRequestDTO = {
+  sessionId: number
+}
+
+type PuzzleHintResponseDTO = {
+  hint: string
+  hintNumber: number
+  maxHintCount: number
+  hintsExhausted: boolean
 }
 
 type VerifyPuzzleMoveRequestDTO = {
@@ -131,7 +143,8 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   const [legalTargets, setLegalTargets] = useState<Square[]>([])
   const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion | null>(null)
   const [puzzleHints, setPuzzleHints] = useState<string[]>([])
-  const [revealedHintCount, setRevealedHintCount] = useState(0)
+  const [hintsExhausted, setHintsExhausted] = useState(false)
+  const [hintLoadError, setHintLoadError] = useState<string | null>(null)
   const [isHintsLoading, setIsHintsLoading] = useState(false)
   const [isVerifyingMove, setIsVerifyingMove] = useState(false)
   const [isSurrendering, setIsSurrendering] = useState(false)
@@ -396,7 +409,8 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     setIncorrectMoveSquare(null)
     setCorrectMoveSquare(null)
     setPuzzleHints([])
-    setRevealedHintCount(0)
+    setHintsExhausted(false)
+    setHintLoadError(null)
     setIsHintsLoading(false)
     setFailedAttempts(0)
     setUpdatedElo(null)
@@ -417,30 +431,44 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     setIsPuzzleLoading(false)
   }
 
+  const requestPuzzleHint = async (puzzleId: string, request: PuzzleHintRequestDTO) => {
+    const response = await fetchWithAuth(`/api/puzzles/${puzzleId}/hints`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(request),
+    })
+
+    if (!response.ok) {
+      throw new Error('Unable to load a puzzle hint.')
+    }
+
+    return (await response.json()) as PuzzleHintResponseDTO
+  }
+
   const loadHints = async () => {
-    if (!puzzle || isPuzzleFinished) {
+    if (!puzzle || isPuzzleFinished || isHintsLoading || hintsExhausted) {
       return
     }
 
     setIsHintsLoading(true)
+    setHintLoadError(null)
 
     try {
-      const response = await fetchWithAuth(`/api/puzzles/${puzzle.id}/hints?sessionId=${puzzle.sessionId}`)
+      const nextHint = await requestPuzzleHint(puzzle.id, { sessionId: puzzle.sessionId })
+      const sanitizedHint = nextHint.hint.trim()
 
-      if (!response.ok) {
-        throw new Error('Unable to load puzzle hints.')
+      if (!sanitizedHint) {
+        throw new Error('Received an empty puzzle hint.')
       }
 
-      const nextHints = (await response.json()) as string[]
-      const sanitizedHints = nextHints.filter((hint) => hint.trim().length > 0)
-      setPuzzleHints(sanitizedHints)
-      setRevealedHintCount((currentCount) =>
-        sanitizedHints.length > 0 ? Math.min(currentCount + 1, sanitizedHints.length, MAX_HINT_COUNT) : 0
-      )
+      const resolvedMaxHintCount = nextHint.maxHintCount > 0 ? nextHint.maxHintCount : MAX_HINT_COUNT
+      setPuzzleHints((currentHints) => [...currentHints, sanitizedHint].slice(0, resolvedMaxHintCount))
+      setHintsExhausted(nextHint.hintsExhausted || nextHint.hintNumber >= resolvedMaxHintCount)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to load puzzle hints.'
-      setPuzzleHints([message])
-      setRevealedHintCount(1)
+      setHintLoadError(message)
     } finally {
       setIsHintsLoading(false)
     }
@@ -573,10 +601,9 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
 
   const boardInteractionDisabled =
     isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isSurrendering || isPuzzleFinished
-  const displayedHints = puzzleHints.slice(0, revealedHintCount)
-  const areHintsExhausted = puzzleHints.length > 0 && revealedHintCount >= Math.min(puzzleHints.length, MAX_HINT_COUNT)
   const hasFinalEloResult = isPuzzleFinished && updatedElo !== null && updatedEloChange !== null
   const puzzleActionLabel = isPuzzleFinished ? 'New puzzle' : isSurrendering ? 'Surrendering...' : 'Surrender'
+  const hintActionLabel = puzzle ? `Ask for AIssistance (-${puzzle.hintEloPenalty} Elo)` : 'Ask for AIssistance'
   const puzzleActionDisabled = isPuzzleFinished
     ? isPuzzleLoading
     : !puzzle || isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isSurrendering
@@ -725,9 +752,9 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
               type="button"
               className="secondary-action compact-action"
               onClick={askHints}
-              disabled={!puzzle || isHintsLoading || isPuzzleFinished || areHintsExhausted}
+              disabled={!puzzle || isHintsLoading || isPuzzleFinished || hintsExhausted}
           >
-            Ask for AIssistance
+            {hintActionLabel}
           </button>
 
           <div className="board-panel">
@@ -735,8 +762,10 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
             <div className="moves-output">
               {isHintsLoading
                 ? 'Loading hints...'
-                : displayedHints.length > 0
-                  ? displayedHints.map((hint, index) => <p key={`${index}-${hint}`}>{hint}</p>)
+                : hintLoadError
+                  ? <p className="error-text">{hintLoadError}</p>
+                  : puzzleHints.length > 0
+                    ? puzzleHints.map((hint, index) => <p key={`${index}-${hint}`}>{hint}</p>)
                   : 'Ask for AIssistance to load hints for this puzzle.'}
             </div>
           </div>

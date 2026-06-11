@@ -5,6 +5,7 @@ import com.juan.tfg.model.PuzzleAttempt;
 import com.juan.tfg.model.PuzzleSession;
 import com.juan.tfg.model.User;
 import com.juan.tfg.model.dto.PuzzleDTO;
+import com.juan.tfg.model.dto.PuzzleHintResponseDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
 import com.juan.tfg.repository.PuzzleRepository;
@@ -51,6 +52,7 @@ class PuzzleServiceTest {
         });
         when(puzzleSessionRepository.findByUserFirebaseUidAndCompletedFalseAndFailedAttemptsGreaterThan(anyString(), anyInt()))
                 .thenReturn(List.of());
+        when(eloService.calculateHintEloPenalty(anyInt(), anyInt())).thenReturn(4);
         puzzleService = new PuzzleService(
                 puzzleRepository,
                 puzzleAttemptRepository,
@@ -80,6 +82,8 @@ class PuzzleServiceTest {
         assertThat(result.get().id()).isEqualTo("puzzle-1");
         assertThat(result.get().sessionId()).isEqualTo(10L);
         assertThat(result.get().rating()).isEqualTo(1210);
+        assertThat(result.get().hintEloPenalty()).isEqualTo(4);
+        verify(eloService).calculateHintEloPenalty(1200, 1210);
     }
 
     @Test
@@ -177,7 +181,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getPuzzleHints_withValidPuzzle() {
+    void getPuzzleHint_withValidPuzzle() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5 g1f3", 1000);
         User user = buildUser("user-1", 1000);
@@ -188,22 +192,69 @@ class PuzzleServiceTest {
                 .thenReturn(hints);
 
         // When
-        Optional<String[]> result = puzzleService.getPuzzleHints("user-1", 10L, "puzzle-1");
+        Optional<PuzzleHintResponseDTO> result = puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1");
 
         // Then
         assertThat(result).isPresent();
-        assertThat(result.get()).containsExactly(hints);
+        assertThat(result.get().hint()).isEqualTo("Control the center.");
+        assertThat(result.get().hintNumber()).isEqualTo(1);
+        assertThat(result.get().maxHintCount()).isEqualTo(3);
+        assertThat(result.get().hintsExhausted()).isFalse();
         assertThat(session.getHintsUsed()).isEqualTo(1);
         assertThat(session.getGeneratedHints()).isEqualTo(String.join("\n", hints));
     }
 
     @Test
-    void getPuzzleHints_withNullPuzzleId() {
+    void getPuzzleHint_returnsStoredHintsOneAtATime() {
+        // Given
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5 g1f3", 1000);
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        String[] hints = {"Control the center.", "Develop a knight."};
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
+        when(aITutorService.getHints(any(), any(), any())).thenReturn(hints);
+
+        // When
+        Optional<PuzzleHintResponseDTO> firstHint = puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1");
+        Optional<PuzzleHintResponseDTO> secondHint = puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1");
+
+        // Then
+        assertThat(firstHint).isPresent();
+        assertThat(firstHint.get().hint()).isEqualTo("Control the center.");
+        assertThat(secondHint).isPresent();
+        assertThat(secondHint.get().hint()).isEqualTo("Develop a knight.");
+        assertThat(secondHint.get().hintNumber()).isEqualTo(2);
+        assertThat(secondHint.get().hintsExhausted()).isTrue();
+        assertThat(session.getHintsUsed()).isEqualTo(2);
+        verify(aITutorService, times(1)).getHints(any(), any(), any());
+    }
+
+    @Test
+    void getPuzzleHint_withExhaustedHintsReturnsEmpty() {
+        // Given
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
+        User user = buildUser("user-1", 1000);
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        session.setHintsUsed(3);
+        session.setGeneratedHints("Hint 1\nHint 2\nHint 3");
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
+
+        // When
+        Optional<PuzzleHintResponseDTO> result = puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1");
+
+        // Then
+        assertThat(result).isEmpty();
+        assertThat(session.getHintsUsed()).isEqualTo(3);
+        verify(puzzleSessionRepository, never()).save(any());
+    }
+
+    @Test
+    void getPuzzleHint_withNullPuzzleId() {
         // Given
         String puzzleId = null;
 
         // When
-        Optional<String[]> result = puzzleService.getPuzzleHints("user-1", 10L, puzzleId);
+        Optional<PuzzleHintResponseDTO> result = puzzleService.getPuzzleHint("user-1", 10L, puzzleId);
 
         // Then
         assertThat(result).isEmpty();
@@ -211,7 +262,7 @@ class PuzzleServiceTest {
     }
 
     @Test
-    void getPuzzleHints_withAiServiceException() {
+    void getPuzzleHint_withAiServiceException() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);
@@ -220,7 +271,7 @@ class PuzzleServiceTest {
         when(aITutorService.getHints(any(), any(), any())).thenThrow(new IllegalStateException("AI unavailable"));
 
         // When
-        ThrowingCallable action = () -> puzzleService.getPuzzleHints("user-1", 10L, "puzzle-1");
+        ThrowingCallable action = () -> puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1");
 
         // Then
         assertThatThrownBy(action)

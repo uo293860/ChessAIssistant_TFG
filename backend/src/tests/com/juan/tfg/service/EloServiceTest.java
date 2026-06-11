@@ -35,7 +35,7 @@ class EloServiceTest {
         int newElo = eloService.calculateNewPlayerElo(playerElo, puzzleElo, hintsUsed, failedAttempts);
 
         // Then
-        assertThat(newElo).isEqualTo(997);
+        assertThat(newElo).isEqualTo(1001);
     }
 
     @Test
@@ -79,5 +79,16 @@ class EloServiceTest {
 
         // Then
         assertThat(harderPuzzleResult).isGreaterThan(equalPuzzleResult);
+    }
+
+    @Test
+    void calculateHintEloPenalty_usesTwentyFivePercentOfPossibleEloGain() {
+        // When
+        int equalPuzzleHintPenalty = eloService.calculateHintEloPenalty(1000, 1000);
+        int harderPuzzleHintPenalty = eloService.calculateHintEloPenalty(1000, 1400);
+
+        // Then
+        assertThat(equalPuzzleHintPenalty).isEqualTo(4);
+        assertThat(harderPuzzleHintPenalty).isEqualTo(7);
     }
 }

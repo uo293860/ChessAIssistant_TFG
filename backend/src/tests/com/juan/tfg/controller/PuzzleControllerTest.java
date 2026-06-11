@@ -1,6 +1,8 @@
 package com.juan.tfg.controller;
 
 import com.juan.tfg.model.dto.PuzzleDTO;
+import com.juan.tfg.model.dto.PuzzleHintRequestDTO;
+import com.juan.tfg.model.dto.PuzzleHintResponseDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationRequestDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.model.dto.PuzzleSurrenderRequestDTO;
@@ -32,7 +34,7 @@ class PuzzleControllerTest {
     @Test
     void getRandomPuzzle() {
         // Given
-        PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 10L, "fen", 1200, "fork", "url", "e2e4");
+        PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 10L, "fen", 1200, "fork", "url", "e2e4", 4);
         when(puzzleService.getRandomPuzzleForUser("user-1", "fork")).thenReturn(Optional.of(puzzle));
 
         // When
@@ -69,42 +71,45 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getPuzzleHints_withExistingPuzzle() {
+    void requestPuzzleHint_withExistingPuzzle() {
         // Given
-        String[] hints = {"Hint 1", "Hint 2"};
-        when(puzzleService.getPuzzleHints("user-1", 10L, "puzzle-1")).thenReturn(Optional.of(hints));
+        PuzzleHintRequestDTO request = new PuzzleHintRequestDTO(10L);
+        PuzzleHintResponseDTO hint = new PuzzleHintResponseDTO("Hint 1", 1, 3, false);
+        when(puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1")).thenReturn(Optional.of(hint));
 
         // When
-        ResponseEntity<String[]> response = puzzleController.getPuzzleHints("user-1", "puzzle-1", 10L);
+        ResponseEntity<PuzzleHintResponseDTO> response = puzzleController.requestPuzzleHint("user-1", "puzzle-1", request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).containsExactly(hints);
+        assertThat(response.getBody()).isEqualTo(hint);
     }
 
     @Test
-    void getPuzzleHints_withMissingPuzzle() {
+    void requestPuzzleHint_withMissingPuzzle() {
         // Given
-        when(puzzleService.getPuzzleHints("user-1", 10L, "missing-puzzle")).thenReturn(Optional.empty());
+        PuzzleHintRequestDTO request = new PuzzleHintRequestDTO(10L);
+        when(puzzleService.getPuzzleHint("user-1", 10L, "missing-puzzle")).thenReturn(Optional.empty());
 
         // When
-        ResponseEntity<String[]> response = puzzleController.getPuzzleHints("user-1", "missing-puzzle", 10L);
+        ResponseEntity<PuzzleHintResponseDTO> response = puzzleController.requestPuzzleHint("user-1", "missing-puzzle", request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 
     @Test
-    void getPuzzleHints_withBlankFirebaseUid() {
+    void requestPuzzleHint_withBlankFirebaseUid() {
         // Given
         String firebaseUid = " ";
+        PuzzleHintRequestDTO request = new PuzzleHintRequestDTO(10L);
 
         // When
-        ResponseEntity<String[]> response = puzzleController.getPuzzleHints(firebaseUid, "puzzle-1", 10L);
+        ResponseEntity<PuzzleHintResponseDTO> response = puzzleController.requestPuzzleHint(firebaseUid, "puzzle-1", request);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-        verify(puzzleService, never()).getPuzzleHints(
+        verify(puzzleService, never()).getPuzzleHint(
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any()

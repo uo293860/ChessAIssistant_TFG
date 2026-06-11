@@ -1,12 +1,9 @@
 package com.juan.tfg.controller;
 
-import com.juan.tfg.model.dto.PuzzleDTO;
-import com.juan.tfg.model.dto.PuzzleMoveVerificationRequestDTO;
-import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
-import com.juan.tfg.model.dto.PuzzleSurrenderRequestDTO;
-import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
+import com.juan.tfg.model.dto.*;
 import com.juan.tfg.service.PuzzleService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +21,7 @@ public class PuzzleController {
             @RequestParam(defaultValue = "middlegame") String theme) {
 
         if (firebaseUid == null || firebaseUid.isBlank()) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         return puzzleService.getRandomPuzzleForUser(firebaseUid, theme)
@@ -32,17 +29,18 @@ public class PuzzleController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/{puzzleId}/hints")
-    public ResponseEntity<String[]> getPuzzleHints(
+    @PostMapping("/{puzzleId}/hints")
+    public ResponseEntity<PuzzleHintResponseDTO> requestPuzzleHint(
             @AuthenticationPrincipal String firebaseUid,
             @PathVariable String puzzleId,
-            @RequestParam Long sessionId
+            @RequestBody PuzzleHintRequestDTO request
     ) {
         if (firebaseUid == null || firebaseUid.isBlank()) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return puzzleService.getPuzzleHints(firebaseUid, sessionId, puzzleId)
+        Long sessionId = request == null ? null : request.sessionId();
+        return puzzleService.getPuzzleHint(firebaseUid, sessionId, puzzleId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
@@ -53,7 +51,7 @@ public class PuzzleController {
             @RequestBody PuzzleMoveVerificationRequestDTO request
     ) {
         if (firebaseUid == null || firebaseUid.isBlank()) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         return puzzleService.verifyMove(
@@ -72,7 +70,7 @@ public class PuzzleController {
             @RequestBody PuzzleSurrenderRequestDTO request
     ) {
         if (firebaseUid == null || firebaseUid.isBlank()) {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         return puzzleService.surrenderPuzzle(

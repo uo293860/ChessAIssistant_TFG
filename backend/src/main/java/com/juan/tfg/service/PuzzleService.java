@@ -4,6 +4,7 @@ import com.juan.tfg.model.Puzzle;
 import com.juan.tfg.model.PuzzleAttempt;
 import com.juan.tfg.model.PuzzleSession;
 import com.juan.tfg.model.User;
+import com.juan.tfg.model.dto.PuzzleHintResponseDTO;
 import com.juan.tfg.model.dto.PuzzleDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
@@ -67,7 +68,7 @@ public class PuzzleService {
                 .nextMoveIndex(1)
                 .build();
         PuzzleSession savedSession = puzzleSessionRepository.save(session);
-        return PuzzleDTO.from(puzzle, savedSession.getId());
+        return PuzzleDTO.from(puzzle, savedSession.getId(), eloService.calculateHintEloPenalty(resolveUserElo(user), puzzle.getRating()));
     }
 
     private int resolveMinRating(User user) {
@@ -83,13 +84,13 @@ public class PuzzleService {
     }
 
     @Transactional
-    public Optional<String[]> getPuzzleHints(String firebaseUid, Long sessionId, String puzzleId) {
+    public Optional<PuzzleHintResponseDTO> getPuzzleHint(String firebaseUid, Long sessionId, String puzzleId) {
         if (firebaseUid == null || firebaseUid.isBlank() || sessionId == null || puzzleId == null || puzzleId.isBlank()) {
             return Optional.empty();
         }
 
         return findActiveSession(firebaseUid, sessionId, puzzleId)
-                .map(this::loadSessionHints);
+                .flatMap(this::revealNextSessionHint);
     }
 
     @Transactional
@@ -240,20 +241,60 @@ public class PuzzleService {
                 .filter(session -> session.getPuzzle().getId().equals(puzzleId));
     }
 
-    private String[] loadSessionHints(PuzzleSession session) {
-        session.setHintsUsed(Math.min(MAX_HINT_COUNT, session.getHintsUsed() + 1));
+    private Optional<PuzzleHintResponseDTO> revealNextSessionHint(PuzzleSession session) {
+        List<String> hints = loadSessionHints(session);
+        int availableHintCount = Math.min(hints.size(), MAX_HINT_COUNT);
+        int revealedHintCount = Math.max(0, session.getHintsUsed());
 
+        if (revealedHintCount >= availableHintCount) {
+            return Optional.empty();
+        }
+
+        String hint = hints.get(revealedHintCount);
+        int nextHintNumber = revealedHintCount + 1;
+        session.setHintsUsed(nextHintNumber);
+        puzzleSessionRepository.save(session);
+
+        return Optional.of(new PuzzleHintResponseDTO(
+                hint,
+                nextHintNumber,
+                MAX_HINT_COUNT,
+                nextHintNumber >= availableHintCount
+        ));
+    }
+
+    private List<String> loadSessionHints(PuzzleSession session) {
         if (session.getGeneratedHints() == null || session.getGeneratedHints().isBlank()) {
-            String[] hints = generateHints(session.getPuzzle());
+            List<String> hints = normalizeHints(generateHints(session.getPuzzle()));
             session.setGeneratedHints(String.join("\n", hints));
-            puzzleSessionRepository.save(session);
             return hints;
         }
 
-        puzzleSessionRepository.save(session);
-        return Arrays.stream(session.getGeneratedHints().split("\\R"))
+        return parseStoredHints(session.getGeneratedHints());
+    }
+
+    private List<String> normalizeHints(String[] hints) {
+        if (hints == null) {
+            return List.of("No hint is available for this position.");
+        }
+
+        List<String> normalizedHints = Arrays.stream(hints)
+                .filter(hint -> hint != null && !hint.isBlank())
+                .map(String::trim)
+                .limit(MAX_HINT_COUNT)
+                .toList();
+
+        return normalizedHints.isEmpty()
+                ? List.of("No hint is available for this position.")
+                : normalizedHints;
+    }
+
+    private List<String> parseStoredHints(String generatedHints) {
+        return Arrays.stream(generatedHints.split("\\R"))
                 .filter(hint -> !hint.isBlank())
-                .toArray(String[]::new);
+                .map(String::trim)
+                .limit(MAX_HINT_COUNT)
+                .toList();
     }
 
     private String[] generateHints(Puzzle puzzle) {

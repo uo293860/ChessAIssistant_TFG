@@ -9,14 +9,10 @@ public record PuzzleDTO(
         Integer rating,
         String themes,
         String gameUrl,
-        String initialMove
+        String initialMove,
+        int hintEloPenalty
 ) {
-
-    public static PuzzleDTO from(Puzzle puzzle) {
-        return from(puzzle, null);
-    }
-
-    public static PuzzleDTO from(Puzzle puzzle, Long sessionId) {
+    public static PuzzleDTO from(Puzzle puzzle, Long sessionId, int hintEloPenalty) {
         return new PuzzleDTO(
                 puzzle.getId(),
                 sessionId,
@@ -24,7 +20,8 @@ public record PuzzleDTO(
                 puzzle.getRating(),
                 puzzle.getThemes(),
                 puzzle.getGameUrl(),
-                puzzle.getInitialMove()
+                puzzle.getInitialMove(),
+                hintEloPenalty
         );
     }
 }

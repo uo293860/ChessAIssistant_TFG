@@ -10,15 +10,26 @@ public class EloService {
     private static final double PENALTY_PER_ERROR = 0.33;
 
     public int calculateNewPlayerElo(int playerElo, int puzzleElo, int hintsUsed, int failedAttempts) {
-        double hintPenalty = hintsUsed * PENALTY_PER_HINT;
-        double errorPenalty = failedAttempts * PENALTY_PER_ERROR;
-        double actualScore = Math.max(0.0, 1.0 - hintPenalty - errorPenalty);
+        int cleanSuccessfulElo = calculateNewPlayerEloWithScore(playerElo, puzzleElo, 1.0);
+        int failedPuzzleElo = calculateNewPlayerEloForFailedPuzzle(playerElo, puzzleElo);
+        int hintPenalty = calculateHintEloPenalty(playerElo, puzzleElo) * Math.max(0, hintsUsed);
+        int failedAttemptPenalty = calculateFailedAttemptEloPenalty(Math.max(0, failedAttempts));
+        int penalizedElo = cleanSuccessfulElo - hintPenalty - failedAttemptPenalty;
 
-        return calculateNewPlayerEloWithScore(playerElo, puzzleElo, actualScore);
+        return Math.max(failedPuzzleElo, penalizedElo);
     }
 
     public int calculateNewPlayerEloForFailedPuzzle(int playerElo, int puzzleElo) {
         return calculateNewPlayerEloWithScore(playerElo, puzzleElo, 0.0);
+    }
+
+    public int calculateHintEloPenalty(int playerElo, int puzzleElo) {
+        int possibleEloGain = Math.max(0, calculateNewPlayerEloWithScore(playerElo, puzzleElo, 1.0) - playerElo);
+        return (int) Math.round(possibleEloGain * PENALTY_PER_HINT);
+    }
+
+    private int calculateFailedAttemptEloPenalty(int failedAttempts) {
+        return (int) Math.round(K_FACTOR * PENALTY_PER_ERROR * failedAttempts);
     }
 
     private int calculateNewPlayerEloWithScore(int playerElo, int puzzleElo, double actualScore) {
