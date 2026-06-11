@@ -181,7 +181,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
-    void countAttemptsWithNoMistakes() {
+    void countSuccessfulAttempts() {
         // Given
         User user = buildUser("user-1", "player-one");
         Puzzle puzzle = buildPuzzle("puzzle-1", 1200, "fork middlegame");
@@ -196,7 +196,34 @@ class RepositoryIntegrationTest {
         long result = puzzleAttemptRepository.countSuccessfulByFirebaseUid("user-1");
 
         // Then
-        assertThat(result).isEqualTo(1);
+        assertThat(result).isEqualTo(2);
+    }
+
+    @Test
+    void findRandomFailedAttempt_returnsUnsolvedFailedAttemptForUser() {
+        // Given
+        User user = buildUser("user-1", "player-one");
+        User otherUser = buildUser("user-2", "player-two");
+        Puzzle puzzle = buildPuzzle("puzzle-1", 1200, "fork middlegame");
+        Puzzle otherPuzzle = buildPuzzle("puzzle-2", 1210, "fork endgame");
+        entityManager.persist(user);
+        entityManager.persist(otherUser);
+        entityManager.persist(puzzle);
+        entityManager.persist(otherPuzzle);
+
+        PuzzleAttempt failedAttempt = persistAttempt(user, puzzle, false, 1, -16, 984);
+        persistAttempt(user, puzzle, true, 0, 12, 1012);
+        persistAttempt(user, otherPuzzle, true, 1, -10, 990);
+        persistAttempt(otherUser, puzzle, false, 1, -10, 990);
+        entityManager.flush();
+        entityManager.clear();
+
+        // When
+        Optional<PuzzleAttempt> result = puzzleAttemptRepository.findRandomFailedAttempt("user-1");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo(failedAttempt.getId());
     }
 
     @Test

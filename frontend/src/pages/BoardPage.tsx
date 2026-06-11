@@ -154,6 +154,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   const [updatedEloChange, setUpdatedEloChange] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
   const [isPuzzleSurrendered, setIsPuzzleSurrendered] = useState(false)
+  const [isRepeatingFailedPuzzle, setIsRepeatingFailedPuzzle] = useState(false)
   const [puzzleActionError, setPuzzleActionError] = useState<string | null>(null)
   const [incorrectMoveSquare, setIncorrectMoveSquare] = useState<Square | null>(null)
   const [correctMoveSquare, setCorrectMoveSquare] = useState<Square | null>(null)
@@ -290,6 +291,18 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     return (await response.json()) as SurrenderPuzzleResponseDTO
   }
 
+  const fetchRandomFailedPuzzle = async () => {
+    const response = await fetchWithAuth('/api/puzzles/failed/random', {
+      method: 'POST',
+    })
+
+    if (!response.ok) {
+      throw new Error('No failed puzzle is available to retry.')
+    }
+
+    return (await response.json()) as PuzzleDTO
+  }
+
   const applyPuzzleResult = (
     puzzleCompleted: boolean,
     newElo: number | null,
@@ -397,11 +410,10 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     }
   }
 
-  const loadRandomPuzzle = async () => {
+  const resetPuzzlePlayState = (repeatingFailedPuzzle: boolean) => {
     clearReplayTimeout()
     clearIncorrectMoveTimeout()
     clearCorrectMoveTimeout()
-    setIsPuzzleLoading(true)
     setIsReplayingInitialMove(false)
     setIsReplayingOpponentMove(false)
     setIsVerifyingMove(false)
@@ -417,18 +429,59 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     setUpdatedEloChange(null)
     setIsPuzzleCompleted(false)
     setIsPuzzleSurrendered(false)
+    setIsRepeatingFailedPuzzle(repeatingFailedPuzzle)
     setPuzzleActionError(null)
     clearSelection()
+  }
 
-    const response = await fetchWithAuth('/api/puzzles/random')
-    const nextPuzzle = (await response.json()) as PuzzleDTO
+  const startPuzzle = (nextPuzzle: PuzzleDTO) => {
     const nextPosition = getPositionAfterInitialMove(nextPuzzle)
 
     setPuzzle(nextPuzzle)
     setBoardOrientation(nextPosition.turn() === 'w' ? 'white' : 'black')
     setGame(new Chess(nextPuzzle.fen))
     replayInitialMove(nextPuzzle)
-    setIsPuzzleLoading(false)
+  }
+
+  const loadRandomPuzzle = async () => {
+    setIsPuzzleLoading(true)
+    resetPuzzlePlayState(false)
+
+    try {
+      const response = await fetchWithAuth('/api/puzzles/random')
+
+      if (!response.ok) {
+        throw new Error('Unable to load a puzzle.')
+      }
+
+      const nextPuzzle = (await response.json()) as PuzzleDTO
+      startPuzzle(nextPuzzle)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load a puzzle.'
+      setPuzzleActionError(message)
+    } finally {
+      setIsPuzzleLoading(false)
+    }
+  }
+
+  const loadRepeatedFailedPuzzle = async () => {
+    if (!isPuzzleFinished || isPuzzleLoading || isVerifyingMove || isSurrendering) {
+      return
+    }
+
+    setIsPuzzleLoading(true)
+    setPuzzleActionError(null)
+
+    try {
+      const repeatedPuzzle = await fetchRandomFailedPuzzle()
+      resetPuzzlePlayState(true)
+      startPuzzle(repeatedPuzzle)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No failed puzzle is available to retry.'
+      setPuzzleActionError(message)
+    } finally {
+      setIsPuzzleLoading(false)
+    }
   }
 
   const requestPuzzleHint = async (puzzleId: string, request: PuzzleHintRequestDTO) => {
@@ -603,10 +656,11 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isSurrendering || isPuzzleFinished
   const hasFinalEloResult = isPuzzleFinished && updatedElo !== null && updatedEloChange !== null
   const puzzleActionLabel = isPuzzleFinished ? 'New puzzle' : isSurrendering ? 'Surrendering...' : 'Surrender'
-  const hintActionLabel = puzzle ? `Ask for AIssistance (-${puzzle.hintEloPenalty} Elo)` : 'Ask for AIssistance'
+  const hintActionLabel = puzzle && !isRepeatingFailedPuzzle ? `Ask for AIssistance (-${puzzle.hintEloPenalty} Elo)` : 'Ask for AIssistance'
   const puzzleActionDisabled = isPuzzleFinished
     ? isPuzzleLoading
     : !puzzle || isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isSurrendering
+  const repeatActionDisabled = !isPuzzleFinished || isPuzzleLoading || isVerifyingMove || isSurrendering
 
   return (
     <main className="board-shell">
@@ -679,15 +733,17 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
                 : isSurrendering
                   ? 'Surrendering the puzzle and updating your Elo.'
                 : isPuzzleSurrendered
-                  ? 'Puzzle surrendered. Elo has been updated as a failed attempt. Load a new puzzle to continue.'
+                  ? isRepeatingFailedPuzzle
+                    ? 'Retry surrendered. The failed attempt remains unsolved.'
+                    : 'Puzzle surrendered. Elo has been updated as a failed attempt. Choose a new puzzle or retry a random failed puzzle.'
                 : isPuzzleCompleted
-                  ? failedAttempts > 0
-                    ? updatedElo === null
-                      ? 'Puzzle completed with mistakes. It will count as unsolved.'
-                      : 'Puzzle completed with mistakes. It will count as unsolved.'
+                  ? isRepeatingFailedPuzzle
+                    ? 'Failed puzzle solved. The failed attempt is now marked as solved.'
+                    : failedAttempts > 0
+                    ? 'Puzzle completed with mistakes. Choose a new puzzle or retry a random failed puzzle.'
                     : updatedElo === null
-                      ? 'Puzzle solved. Load a new puzzle to continue.'
-                      : 'Puzzle solved. Load a new puzzle to continue.'
+                      ? 'Puzzle solved. Choose a new puzzle or retry a random failed puzzle.'
+                      : 'Puzzle solved. Choose a new puzzle or retry a random failed puzzle.'
                 : pendingPromotion
                   ? `Choose a promotion piece for ${pendingPromotion.to}.`
                   : selectedSquare
@@ -737,7 +793,17 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
             </div>
           ) : null}
 
-          <div>
+          <div className={isPuzzleFinished ? 'puzzle-result-actions' : undefined}>
+            {isPuzzleFinished ? (
+              <button
+                type="button"
+                className="secondary-action compact-action"
+                onClick={() => void loadRepeatedFailedPuzzle()}
+                disabled={repeatActionDisabled}
+              >
+                Random failed puzzle
+              </button>
+            ) : null}
             <button
               type="button"
               className={`secondary-action compact-action ${isPuzzleFinished ? '' : 'surrender-action'}`}

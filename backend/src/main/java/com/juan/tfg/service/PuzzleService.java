@@ -61,10 +61,25 @@ public class PuzzleService {
                 .map(puzzle -> createPuzzleSession(user, puzzle));
     }
 
+    @Transactional
+    public Optional<PuzzleDTO> getRandomFailedPuzzleForUser(String firebaseUid) {
+        if (firebaseUid == null || firebaseUid.isBlank()) {
+            return Optional.empty();
+        }
+
+        return puzzleAttemptRepository.findRandomFailedAttempt(firebaseUid)
+                .map(attempt -> createPuzzleSession(attempt.getUser(), attempt.getPuzzle(), attempt));
+    }
+
     private PuzzleDTO createPuzzleSession(User user, Puzzle puzzle) {
+        return createPuzzleSession(user, puzzle, null);
+    }
+
+    private PuzzleDTO createPuzzleSession(User user, Puzzle puzzle, PuzzleAttempt retryAttempt) {
         PuzzleSession session = PuzzleSession.builder()
                 .user(user)
                 .puzzle(puzzle)
+                .retryAttempt(retryAttempt)
                 .nextMoveIndex(1)
                 .build();
         PuzzleSession savedSession = puzzleSessionRepository.save(session);
@@ -206,6 +221,10 @@ public class PuzzleService {
         int failedAttempts = session.getFailedAttempts();
 
         int currentElo = resolveUserElo(user);
+        if (session.getRetryAttempt() != null) {
+            return updateRetriedAttempt(session, solved, user, currentElo);
+        }
+
         int newElo = solved
                 ? eloService.calculateNewPlayerElo(currentElo, puzzle.getRating(), hintsUsed, failedAttempts)
                 : eloService.calculateNewPlayerEloForFailedPuzzle(currentElo, puzzle.getRating());
@@ -226,6 +245,22 @@ public class PuzzleService {
         userRepository.save(user);
 
         return new EloUpdate(newElo, eloChange);
+    }
+
+    private EloUpdate updateRetriedAttempt(PuzzleSession session, boolean solved, User user, int currentElo) {
+        PuzzleAttempt retryAttempt = session.getRetryAttempt();
+
+        if (!retryAttempt.getUser().getFirebaseUid().equals(user.getFirebaseUid())
+                || !retryAttempt.getPuzzle().getId().equals(session.getPuzzle().getId())) {
+            throw new IllegalStateException("Retry session does not match the failed puzzle attempt.");
+        }
+
+        if (solved) {
+            retryAttempt.setIsSuccessful(true);
+            puzzleAttemptRepository.save(retryAttempt);
+        }
+
+        return new EloUpdate(currentElo, 0);
     }
 
     private record EloUpdate(int newElo, int eloChange) {

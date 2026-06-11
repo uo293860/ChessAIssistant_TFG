@@ -45,6 +45,17 @@ public class PuzzleController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/failed/random")
+    public ResponseEntity<PuzzleDTO> getRandomFailedPuzzle(@AuthenticationPrincipal String firebaseUid) {
+        if (firebaseUid == null || firebaseUid.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return puzzleService.getRandomFailedPuzzleForUser(firebaseUid)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/verify-move")
     public ResponseEntity<PuzzleMoveVerificationResponseDTO> verifyMove(
             @AuthenticationPrincipal String firebaseUid,

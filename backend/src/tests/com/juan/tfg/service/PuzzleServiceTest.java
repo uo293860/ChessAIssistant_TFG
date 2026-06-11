@@ -181,6 +181,54 @@ class PuzzleServiceTest {
     }
 
     @Test
+    void getRandomFailedPuzzleForUser_withFailedAttemptCreatesRetrySession() {
+        // Given
+        User user = buildUser("user-1", 984);
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
+        PuzzleAttempt failedAttempt = PuzzleAttempt.builder()
+                .id(7L)
+                .user(user)
+                .puzzle(puzzle)
+                .isSuccessful(false)
+                .failedAttempts(1)
+                .eloChange(-16)
+                .resultingElo(984)
+                .build();
+        when(puzzleAttemptRepository.findRandomFailedAttempt("user-1"))
+                .thenReturn(Optional.of(failedAttempt));
+
+        // When
+        Optional<PuzzleDTO> result = puzzleService.getRandomFailedPuzzleForUser("user-1");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().id()).isEqualTo("puzzle-1");
+        assertThat(result.get().sessionId()).isEqualTo(10L);
+        assertThat(result.get().hintEloPenalty()).isEqualTo(4);
+
+        ArgumentCaptor<PuzzleSession> sessionCaptor = ArgumentCaptor.forClass(PuzzleSession.class);
+        verify(puzzleSessionRepository).save(sessionCaptor.capture());
+        assertThat(sessionCaptor.getValue().getUser()).isEqualTo(user);
+        assertThat(sessionCaptor.getValue().getPuzzle()).isEqualTo(puzzle);
+        assertThat(sessionCaptor.getValue().getRetryAttempt()).isEqualTo(failedAttempt);
+        verify(eloService).calculateHintEloPenalty(984, 1000);
+    }
+
+    @Test
+    void getRandomFailedPuzzleForUser_withNoFailedAttemptReturnsEmpty() {
+        // Given
+        when(puzzleAttemptRepository.findRandomFailedAttempt("user-1"))
+                .thenReturn(Optional.empty());
+
+        // When
+        Optional<PuzzleDTO> result = puzzleService.getRandomFailedPuzzleForUser("user-1");
+
+        // Then
+        assertThat(result).isEmpty();
+        verify(puzzleSessionRepository, never()).save(any());
+    }
+
+    @Test
     void getPuzzleHint_withValidPuzzle() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5 g1f3", 1000);
@@ -340,6 +388,44 @@ class PuzzleServiceTest {
     }
 
     @Test
+    void verifyMove_withRetriedFailedPuzzleMarksAttemptSolvedWithoutChangingElo() {
+        // Given
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
+        User user = buildUser("user-1", 984);
+        PuzzleAttempt failedAttempt = PuzzleAttempt.builder()
+                .id(7L)
+                .user(user)
+                .puzzle(puzzle)
+                .isSuccessful(false)
+                .failedAttempts(1)
+                .eloChange(-16)
+                .resultingElo(984)
+                .build();
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        session.setRetryAttempt(failedAttempt);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // When
+        Optional<PuzzleMoveVerificationResponseDTO> result = puzzleService.verifyMove("user-1", 10L, "puzzle-1", "e7e5");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().correct()).isTrue();
+        assertThat(result.get().puzzleCompleted()).isTrue();
+        assertThat(result.get().newElo()).isEqualTo(984);
+        assertThat(result.get().eloChange()).isZero();
+        assertThat(session.isCompleted()).isTrue();
+        assertThat(failedAttempt.getIsSuccessful()).isTrue();
+
+        verify(puzzleAttemptRepository).save(failedAttempt);
+        verify(userRepository, never()).save(any());
+        verify(eloService, never()).calculateNewPlayerElo(anyInt(), anyInt(), anyInt(), anyInt());
+        verify(eloService, never()).calculateNewPlayerEloForFailedPuzzle(anyInt(), anyInt());
+    }
+
+    @Test
     void verifyMove_withIncorrectMove() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -407,6 +493,41 @@ class PuzzleServiceTest {
         assertThat(attemptCaptor.getValue().getFailedAttempts()).isEqualTo(1);
         verify(eloService).calculateNewPlayerEloForFailedPuzzle(1000, 1000);
         verify(userRepository).save(user);
+        verify(puzzleSessionRepository).save(session);
+    }
+
+    @Test
+    void surrenderPuzzle_withRetriedFailedPuzzleDoesNotChangeElo() {
+        // Given
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
+        User user = buildUser("user-1", 984);
+        PuzzleAttempt failedAttempt = PuzzleAttempt.builder()
+                .id(7L)
+                .user(user)
+                .puzzle(puzzle)
+                .isSuccessful(false)
+                .failedAttempts(1)
+                .eloChange(-16)
+                .resultingElo(984)
+                .build();
+        PuzzleSession session = buildSession(10L, user, puzzle);
+        session.setRetryAttempt(failedAttempt);
+        when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+
+        // When
+        var result = puzzleService.surrenderPuzzle("user-1", 10L, "puzzle-1");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().newElo()).isEqualTo(984);
+        assertThat(result.get().eloChange()).isZero();
+        assertThat(session.isCompleted()).isTrue();
+        assertThat(failedAttempt.getIsSuccessful()).isFalse();
+
+        verify(puzzleAttemptRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+        verify(eloService, never()).calculateNewPlayerEloForFailedPuzzle(anyInt(), anyInt());
         verify(puzzleSessionRepository).save(session);
     }
 

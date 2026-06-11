@@ -117,6 +117,44 @@ class PuzzleControllerTest {
     }
 
     @Test
+    void getRandomFailedPuzzle() {
+        // Given
+        PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 11L, "fen", 1200, "fork", "url", "e2e4", 4);
+        when(puzzleService.getRandomFailedPuzzleForUser("user-1")).thenReturn(Optional.of(puzzle));
+
+        // When
+        ResponseEntity<PuzzleDTO> response = puzzleController.getRandomFailedPuzzle("user-1");
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(puzzle);
+    }
+
+    @Test
+    void getRandomFailedPuzzle_withBlankFirebaseUid() {
+        // When
+        ResponseEntity<PuzzleDTO> response = puzzleController.getRandomFailedPuzzle(" ");
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        verify(puzzleService, never()).getRandomFailedPuzzleForUser(
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void getRandomFailedPuzzle_withNoFailedAttempt() {
+        // Given
+        when(puzzleService.getRandomFailedPuzzleForUser("user-1")).thenReturn(Optional.empty());
+
+        // When
+        ResponseEntity<PuzzleDTO> response = puzzleController.getRandomFailedPuzzle("user-1");
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
     void verifyMove() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");

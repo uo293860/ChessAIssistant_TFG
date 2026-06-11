@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Long> {
 
@@ -27,9 +28,18 @@ public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Lo
             from PuzzleAttempt attempt
             where attempt.user.firebaseUid = :firebaseUid
             and attempt.isSuccessful = true
-            and attempt.failedAttempts = 0
             """)
     long countSuccessfulByFirebaseUid(@Param("firebaseUid") String firebaseUid);
+
+    @Query(value = """
+            select *
+            from puzzle_attempts
+            where user_id = :firebaseUid
+              and is_successful = false
+            order by random()
+            limit 1
+            """, nativeQuery = true)
+    Optional<PuzzleAttempt> findRandomFailedAttempt(@Param("firebaseUid") String firebaseUid);
 
     @Query("""
             select attempt.user.firebaseUid as firebaseUid,

@@ -38,6 +38,10 @@ public class PuzzleSession {
     @JoinColumn(name = "puzzle_id", nullable = false)
     private Puzzle puzzle;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "retry_attempt_id")
+    private PuzzleAttempt retryAttempt;
+
     @Column(name = "next_move_index", nullable = false)
     @Builder.Default
     private int nextMoveIndex = 1;
