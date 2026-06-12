@@ -15,11 +15,11 @@ public class AbstractAITutorService implements AITutorService {
                 "\n" +
                 "Hint 1 should be very general and focus on high-level evaluation or strategic ideas, identifying weaknesses and strengths over the board.\n" +
                 "\n" +
-                "Hint 2 should narrow the focus to relevant tactical or positional themes.\n" +
+                "Hint 2 should narrow the focus to relevant tactical or positional themes. You can mention the specific theme of the puzzle.\n" +
                 "\n" +
-                "Hint 3 should make the solution quite clear, while still not explicitly stating the exact move.\n" +
+                "Hint 3 should make the solution quite clear, while still not explicitly stating the exact move. You can mention specific squares or pieces that are specially important for the puzzle. \n" +
                 "\n" +
-                "Do NOT mention any specific move, square, or explicit piece movement.\n" +
+                "Do NOT mention any specific move or explicit piece movement.\n" +
                 "\n" +
                 "The hints must focus on advanced chess concepts such as king safety, piece activity, weak squares, pins, skewers, discovered attacks, overloaded pieces, coordination, or tactical motifs — not on “which piece to move.”\n" +
                 "\n" +
