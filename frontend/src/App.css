@@ -475,6 +475,146 @@
   padding: 18px;
 }
 
+.theme-filter-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.theme-filter-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.theme-filter-heading {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.theme-filter-heading .panel-title {
+  margin-bottom: 0;
+}
+
+.theme-filter-heading strong {
+  color: #111111;
+  line-height: 1.2;
+}
+
+.theme-toggle-action {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-toggle-indicator {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-right: 3px solid #111111;
+  border-bottom: 3px solid #111111;
+  transform: rotate(45deg);
+  transition: transform 0.18s ease;
+}
+
+.theme-toggle-indicator.open {
+  transform: rotate(225deg);
+}
+
+.theme-reset-action {
+  width: auto;
+  min-height: 34px;
+  padding: 7px 11px;
+}
+
+.theme-filter-body {
+  display: grid;
+  gap: 12px;
+}
+
+.theme-search-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111111;
+  font: inherit;
+}
+
+.theme-search-input:focus {
+  outline: 2px solid rgba(17, 17, 17, 0.12);
+  border-color: #111111;
+}
+
+.theme-filter-list {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.theme-option {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid #d4d4d4;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111111;
+}
+
+.theme-option.selected {
+  background: #e7f6ec;
+  border-color: #b9e4c6;
+}
+
+.theme-option input {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  accent-color: #111111;
+}
+
+.theme-option-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.theme-option-copy strong {
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+
+.theme-option-copy code {
+  color: #626262;
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.theme-state {
+  margin: 0;
+  color: #4c4c4c;
+}
+
 .leaderboard-panel {
   position: sticky;
   top: 16px;

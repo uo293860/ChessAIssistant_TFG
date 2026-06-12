@@ -2,11 +2,14 @@ package com.juan.tfg.controller;
 
 import com.juan.tfg.model.dto.*;
 import com.juan.tfg.service.PuzzleService;
+import com.juan.tfg.service.PuzzleThemeCatalog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/puzzles")
@@ -14,17 +17,34 @@ import org.springframework.web.bind.annotation.*;
 public class PuzzleController {
 
     private final PuzzleService puzzleService;
+    private final PuzzleThemeCatalog puzzleThemeCatalog;
+
+    @GetMapping("/themes")
+    public ResponseEntity<List<PuzzleThemeDTO>> getPuzzleThemes(@AuthenticationPrincipal String firebaseUid) {
+        if (firebaseUid == null || firebaseUid.isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        return ResponseEntity.ok(puzzleThemeCatalog.getThemes());
+    }
 
     @GetMapping("/random")
     public ResponseEntity<PuzzleDTO> getRandomPuzzle(
             @AuthenticationPrincipal String firebaseUid,
-            @RequestParam(defaultValue = "middlegame") String theme) {
+            @RequestParam(name = "theme", required = false) String theme) {
 
         if (firebaseUid == null || firebaseUid.isBlank()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        return puzzleService.getRandomPuzzleForUser(firebaseUid, theme)
+        String selectedThemeId;
+        try {
+            selectedThemeId = puzzleThemeCatalog.resolveSelectedThemeId(theme).orElse(null);
+        } catch (IllegalArgumentException exception) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        return puzzleService.getRandomPuzzleForUser(firebaseUid, selectedThemeId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

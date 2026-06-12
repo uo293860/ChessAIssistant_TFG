@@ -33,6 +33,7 @@ class PuzzleServiceTest {
     private UserRepository userRepository;
     private EloService eloService;
     private AITutorService aITutorService;
+    private PuzzleThemeCatalog puzzleThemeCatalog;
     private PuzzleService puzzleService;
 
     @BeforeEach
@@ -43,6 +44,7 @@ class PuzzleServiceTest {
         userRepository = mock(UserRepository.class);
         eloService = mock(EloService.class);
         aITutorService = mock(AITutorService.class);
+        puzzleThemeCatalog = new PuzzleThemeCatalog();
         when(puzzleSessionRepository.save(any(PuzzleSession.class))).thenAnswer(invocation -> {
             PuzzleSession session = invocation.getArgument(0);
             if (session.getId() == null) {
@@ -59,7 +61,8 @@ class PuzzleServiceTest {
                 puzzleSessionRepository,
                 userRepository,
                 eloService,
-                aITutorService
+                aITutorService,
+                puzzleThemeCatalog
         );
     }
 
@@ -97,6 +100,7 @@ class PuzzleServiceTest {
         // Then
         assertThat(result).isEmpty();
         verify(puzzleRepository, never()).findRandomPuzzleByThemeAndRating(any(), anyInt(), anyInt());
+        verify(puzzleRepository, never()).findRandomPuzzleByRating(anyInt(), anyInt());
     }
 
     @Test
@@ -116,6 +120,50 @@ class PuzzleServiceTest {
         // Then
         assertThat(result).isPresent();
         verify(puzzleRepository).findRandomPuzzleByThemeAndRating("mate", 900, 1100);
+    }
+
+    @Test
+    void getRandomPuzzleForUser_withThemeFallsBackToThemeOnlyWhenRatingRangeHasNoPuzzle() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .eloRating(1200)
+                .build();
+        Puzzle fallbackPuzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1600);
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(puzzleRepository.findRandomPuzzleByThemeAndRating("fork", 1100, 1300)).thenReturn(Optional.empty());
+        when(puzzleRepository.findRandomPuzzleByTheme("fork")).thenReturn(Optional.of(fallbackPuzzle));
+
+        // When
+        Optional<PuzzleDTO> result = puzzleService.getRandomPuzzleForUser("user-1", "fork");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().id()).isEqualTo("puzzle-1");
+        assertThat(result.get().rating()).isEqualTo(1600);
+        verify(puzzleRepository).findRandomPuzzleByThemeAndRating("fork", 1100, 1300);
+        verify(puzzleRepository).findRandomPuzzleByTheme("fork");
+        verify(puzzleRepository, never()).findRandomPuzzleByRating(anyInt(), anyInt());
+    }
+
+    @Test
+    void getRandomPuzzleForUser_withoutThemeUsesAnyPuzzleInRatingRange() {
+        // Given
+        User user = User.builder()
+                .firebaseUid("user-1")
+                .eloRating(1200)
+                .build();
+        Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1210);
+        when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
+        when(puzzleRepository.findRandomPuzzleByRating(1100, 1300)).thenReturn(Optional.of(puzzle));
+
+        // When
+        Optional<PuzzleDTO> result = puzzleService.getRandomPuzzleForUser("user-1", null);
+
+        // Then
+        assertThat(result).isPresent();
+        verify(puzzleRepository).findRandomPuzzleByRating(1100, 1300);
+        verify(puzzleRepository, never()).findRandomPuzzleByThemeAndRating(any(), anyInt(), anyInt());
     }
 
     @Test

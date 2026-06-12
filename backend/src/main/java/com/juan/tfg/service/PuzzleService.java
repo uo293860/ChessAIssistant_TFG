@@ -36,13 +36,20 @@ public class PuzzleService {
     private final UserRepository userRepository;
     private final EloService eloService;
     private final AITutorService aITutorService;
+    private final PuzzleThemeCatalog puzzleThemeCatalog;
 
     @Transactional
-    public Optional<PuzzleDTO> getRandomPuzzleForUser(String firebaseUid, String theme) {
+    public Optional<PuzzleDTO> getRandomPuzzleForUser(String firebaseUid, String themeId) {
+        if (firebaseUid == null || firebaseUid.isBlank()) {
+            return Optional.empty();
+        }
+
+        Optional<String> selectedThemeId = puzzleThemeCatalog.resolveSelectedThemeId(themeId);
+
         return userRepository.findById(firebaseUid)
                 .flatMap(user -> {
                     autoSurrenderAbandonedFailedSessions(user);
-                    return getRandomPuzzleForSession(user, theme);
+                    return getRandomPuzzleForSession(user, selectedThemeId);
                 });
     }
 
@@ -56,9 +63,18 @@ public class PuzzleService {
         abandonedSessions.forEach(this::surrenderSession);
     }
 
-    private Optional<PuzzleDTO> getRandomPuzzleForSession(User user, String theme) {
-        return puzzleRepository.findRandomPuzzleByThemeAndRating(theme, resolveMinRating(user), resolveMaxRating(user))
+    private Optional<PuzzleDTO> getRandomPuzzleForSession(User user, Optional<String> themeId) {
+        Optional<Puzzle> selectedPuzzle = themeId
+                .map(selectedThemeId -> findRandomPuzzleByThemeWithRatingFallback(user, selectedThemeId))
+                .orElseGet(() -> puzzleRepository.findRandomPuzzleByRating(resolveMinRating(user), resolveMaxRating(user)));
+
+        return selectedPuzzle
                 .map(puzzle -> createPuzzleSession(user, puzzle));
+    }
+
+    private Optional<Puzzle> findRandomPuzzleByThemeWithRatingFallback(User user, String themeId) {
+        return puzzleRepository.findRandomPuzzleByThemeAndRating(themeId, resolveMinRating(user), resolveMaxRating(user))
+                .or(() -> puzzleRepository.findRandomPuzzleByTheme(themeId));
     }
 
     @Transactional

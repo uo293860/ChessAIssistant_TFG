@@ -14,7 +14,7 @@ import java.net.http.HttpResponse;
 @Service
 public class LichessService {
 
-    public Puzzle probarConexion() throws IOException, InterruptedException {
+    public Puzzle getDailyPuzzle() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://lichess.org/api/puzzle/daily"))
                 .method("GET", HttpRequest.BodyPublishers.noBody())

@@ -8,6 +8,7 @@ import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.model.dto.PuzzleSurrenderRequestDTO;
 import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
 import com.juan.tfg.service.PuzzleService;
+import com.juan.tfg.service.PuzzleThemeCatalog;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,12 +24,14 @@ import static org.mockito.Mockito.*;
 class PuzzleControllerTest {
 
     private PuzzleService puzzleService;
+    private PuzzleThemeCatalog puzzleThemeCatalog;
     private PuzzleController puzzleController;
 
     @BeforeEach
     void setUp() {
         puzzleService = mock(PuzzleService.class);
-        puzzleController = new PuzzleController(puzzleService);
+        puzzleThemeCatalog = new PuzzleThemeCatalog();
+        puzzleController = new PuzzleController(puzzleService, puzzleThemeCatalog);
     }
 
     @Test
@@ -68,6 +71,53 @@ class PuzzleControllerTest {
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void getRandomPuzzle_withoutTheme() {
+        // Given
+        PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 10L, "fen", 1200, "fork", "url", "e2e4", 4);
+        when(puzzleService.getRandomPuzzleForUser("user-1", null)).thenReturn(Optional.of(puzzle));
+
+        // When
+        ResponseEntity<PuzzleDTO> response = puzzleController.getRandomPuzzle("user-1", null);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(puzzle);
+    }
+
+    @Test
+    void getRandomPuzzle_withUnknownTheme() {
+        // When
+        ResponseEntity<PuzzleDTO> response = puzzleController.getRandomPuzzle("user-1", "unknownTheme");
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(puzzleService, never()).getRandomPuzzleForUser(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
+    }
+
+    @Test
+    void getPuzzleThemes() {
+        // When
+        var response = puzzleController.getPuzzleThemes("user-1");
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).extracting("id").contains("fork", "middlegame", "enPassant");
+    }
+
+    @Test
+    void getPuzzleThemes_withBlankFirebaseUid() {
+        // When
+        var response = puzzleController.getPuzzleThemes(" ");
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test

@@ -53,7 +53,6 @@ public interface PuzzleAttemptRepository extends JpaRepository<PuzzleAttempt, Lo
 
     interface UserDailyEloChange {
         String getFirebaseUid();
-
         Long getEloChange();
     }
 }

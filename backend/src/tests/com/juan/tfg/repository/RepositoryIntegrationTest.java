@@ -126,6 +126,53 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    void findPuzzleByRating_returnsAnyThemeInRatingRange() {
+        // Given
+        Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1250, "pin endgame");
+        Puzzle outOfRatingPuzzle = buildPuzzle("puzzle-2", 1500, "skewer opening");
+        entityManager.persist(expectedPuzzle);
+        entityManager.persist(outOfRatingPuzzle);
+        entityManager.flush();
+
+        // When
+        Optional<Puzzle> result = puzzleRepository.findRandomPuzzleByRating(1200, 1300);
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo("puzzle-1");
+    }
+
+    @Test
+    void findPuzzleByTheme_returnsThemeMatchOutsideRatingRange() {
+        // Given
+        Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1800, "fork middlegame");
+        Puzzle outOfThemePuzzle = buildPuzzle("puzzle-2", 1250, "pin endgame");
+        entityManager.persist(expectedPuzzle);
+        entityManager.persist(outOfThemePuzzle);
+        entityManager.flush();
+
+        // When
+        Optional<Puzzle> result = puzzleRepository.findRandomPuzzleByTheme("fork");
+
+        // Then
+        assertThat(result).isPresent();
+        assertThat(result.get().getId()).isEqualTo("puzzle-1");
+    }
+
+    @Test
+    void findPuzzleByThemeAndRating_matchesWholeThemeTokensOnly() {
+        // Given
+        Puzzle mateInTwoPuzzle = buildPuzzle("puzzle-1", 1250, "mateIn2 middlegame");
+        entityManager.persistAndFlush(mateInTwoPuzzle);
+
+        // When
+        Optional<Puzzle> result = puzzleRepository.findRandomPuzzleByThemeAndRating("mate", 1200, 1300);
+
+        // Then
+        assertThat(result).isEmpty();
+    }
+
+    @Test
     void findEloHistoryByUserId() {
         // Given
         User user = buildUser("user-1", "player-one");

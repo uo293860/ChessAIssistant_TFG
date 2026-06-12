@@ -36,6 +36,11 @@ type PuzzleDTO = {
   hintEloPenalty: number
 }
 
+type PuzzleThemeDTO = {
+  id: string
+  label: string
+}
+
 type PuzzleHintRequestDTO = {
   sessionId: number
 }
@@ -137,6 +142,12 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   const [game, setGame] = useState(() => new Chess())
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white')
   const [puzzle, setPuzzle] = useState<PuzzleDTO | null>(null)
+  const [puzzleThemes, setPuzzleThemes] = useState<PuzzleThemeDTO[]>([])
+  const [selectedThemeId, setSelectedThemeId] = useState<string | null>(null)
+  const [isThemeFilterOpen, setIsThemeFilterOpen] = useState(false)
+  const [themeSearch, setThemeSearch] = useState('')
+  const [themeLoadError, setThemeLoadError] = useState<string | null>(null)
+  const [isThemesLoading, setIsThemesLoading] = useState(false)
   const [isPuzzleLoading, setIsPuzzleLoading] = useState(true)
   const [isReplayingInitialMove, setIsReplayingInitialMove] = useState(false)
   const [selectedSquare, setSelectedSquare] = useState<Square | null>(null)
@@ -303,6 +314,42 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     return (await response.json()) as PuzzleDTO
   }
 
+  const fetchPuzzleThemes = async () => {
+    const response = await fetchWithAuth('/api/puzzles/themes')
+
+    if (!response.ok) {
+      throw new Error('Unable to load puzzle themes.')
+    }
+
+    return (await response.json()) as PuzzleThemeDTO[]
+  }
+
+  const loadPuzzleThemes = async () => {
+    setIsThemesLoading(true)
+    setThemeLoadError(null)
+
+    try {
+      const themes = await fetchPuzzleThemes()
+      setPuzzleThemes(themes.filter((theme) => theme.id.trim() && theme.label.trim()))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load puzzle themes.'
+      setThemeLoadError(message)
+    } finally {
+      setIsThemesLoading(false)
+    }
+  }
+
+  const buildRandomPuzzlePath = (themeId: string | null) => {
+    const params = new URLSearchParams()
+
+    if (themeId) {
+      params.set('theme', themeId)
+    }
+
+    const query = params.toString()
+    return query ? `/api/puzzles/random?${query}` : '/api/puzzles/random'
+  }
+
   const applyPuzzleResult = (
     puzzleCompleted: boolean,
     newElo: number | null,
@@ -448,7 +495,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     resetPuzzlePlayState(false)
 
     try {
-      const response = await fetchWithAuth('/api/puzzles/random')
+      const response = await fetchWithAuth(buildRandomPuzzlePath(selectedThemeId))
 
       if (!response.ok) {
         throw new Error('Unable to load a puzzle.')
@@ -528,6 +575,7 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
   }
 
   useEffect(() => {
+    void loadPuzzleThemes()
     void loadRandomPuzzle()
     return () => {
       clearReplayTimeout()
@@ -537,6 +585,16 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     // The initial puzzle should be loaded once when the board page mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const toggleThemeSelection = (themeId: string) => {
+    setSelectedThemeId((currentThemeId) => currentThemeId === themeId ? null : themeId)
+    setIsThemeFilterOpen(false)
+  }
+
+  const resetThemeFilter = () => {
+    setSelectedThemeId(null)
+    setIsThemeFilterOpen(false)
+  }
 
   const handlePromotionChoice = (promotion: PromotionPiece) => {
     if (!pendingPromotion) {
@@ -661,6 +719,13 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
     ? isPuzzleLoading
     : !puzzle || isPuzzleLoading || isReplayingInitialMove || isReplayingOpponentMove || isVerifyingMove || isSurrendering
   const repeatActionDisabled = !isPuzzleFinished || isPuzzleLoading || isVerifyingMove || isSurrendering
+  const normalizedThemeSearch = themeSearch.trim().toLowerCase()
+  const visiblePuzzleThemes = normalizedThemeSearch
+    ? puzzleThemes.filter((theme) =>
+      theme.label.toLowerCase().includes(normalizedThemeSearch) || theme.id.toLowerCase().includes(normalizedThemeSearch)
+    )
+    : puzzleThemes
+  const themeLabelById = new Map(puzzleThemes.map((theme) => [theme.id, theme.label]))
 
   return (
     <main className="board-shell">
@@ -717,6 +782,66 @@ export function BoardPage({ isLoading, onOpenProfile, onOpenAbout, onSignOut }: 
         </div>
 
         <aside className="board-sidebar">
+          <div className="board-panel theme-filter-panel">
+            <div className="theme-filter-header">
+              <button
+                type="button"
+                className="theme-toggle-action"
+                onClick={() => setIsThemeFilterOpen((isOpen) => !isOpen)}
+                aria-expanded={isThemeFilterOpen}
+              >
+                <span className="theme-filter-heading">
+                  <span className="panel-title">Theme</span>
+                  <strong>{selectedThemeId ? themeLabelById.get(selectedThemeId) ?? selectedThemeId : 'Any theme'}</strong>
+                </span>
+                <span className={`theme-toggle-indicator ${isThemeFilterOpen ? 'open' : ''}`} aria-hidden="true" />
+              </button>
+
+              {selectedThemeId ? (
+                <button type="button" className="inline-action theme-reset-action" onClick={resetThemeFilter}>
+                  Clear
+                </button>
+              ) : null}
+            </div>
+
+            {isThemeFilterOpen ? (
+              <div className="theme-filter-body">
+                <input
+                  className="theme-search-input"
+                  type="search"
+                  value={themeSearch}
+                  onChange={(event) => setThemeSearch(event.target.value)}
+                  placeholder="Search themes"
+                  aria-label="Search puzzle themes"
+                />
+
+                {themeLoadError ? <p className="error-text theme-state">{themeLoadError}</p> : null}
+
+                <div className="theme-filter-list">
+                  {isThemesLoading ? <p className="theme-state">Loading themes...</p> : null}
+                  {!isThemesLoading && visiblePuzzleThemes.length === 0 ? <p className="theme-state">No themes found.</p> : null}
+                  {visiblePuzzleThemes.map((theme) => {
+                    const selected = selectedThemeId === theme.id
+
+                    return (
+                      <label key={theme.id} className={`theme-option ${selected ? 'selected' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={selected}
+                          onChange={() => toggleThemeSelection(theme.id)}
+                        />
+                        <span className="theme-option-copy">
+                          <strong>{theme.label}</strong>
+                          <code>{theme.id}</code>
+                        </span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           <div className="board-panel">
             <p className="panel-title">Game state</p>
             <strong>{isPuzzleLoading ? 'Loading puzzle...' : getStatusMessage(game)}</strong>
