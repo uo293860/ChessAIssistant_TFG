@@ -54,7 +54,8 @@ class PuzzleServiceTest {
         });
         when(puzzleSessionRepository.findByUserFirebaseUidAndCompletedFalseAndFailedAttemptsGreaterThan(anyString(), anyInt()))
                 .thenReturn(List.of());
-        when(eloService.calculateHintEloPenalty(anyInt(), anyInt())).thenReturn(4);
+        when(eloService.calculateNewPlayerElo(anyInt(), anyInt(), eq(true), eq(0), eq(0))).thenReturn(1016);
+        when(eloService.calculateNewPlayerElo(anyInt(), anyInt(), eq(true), eq(1), eq(0))).thenReturn(1008);
         puzzleService = new PuzzleService(
                 puzzleRepository,
                 puzzleAttemptRepository,
@@ -85,8 +86,9 @@ class PuzzleServiceTest {
         assertThat(result.get().id()).isEqualTo("puzzle-1");
         assertThat(result.get().sessionId()).isEqualTo(10L);
         assertThat(result.get().rating()).isEqualTo(1210);
-        assertThat(result.get().hintEloPenalty()).isEqualTo(4);
-        verify(eloService).calculateHintEloPenalty(1200, 1210);
+        assertThat(result.get().hintEloPenalty()).isEqualTo(8);
+        verify(eloService).calculateNewPlayerElo(1200, 1210, true, 0, 0);
+        verify(eloService).calculateNewPlayerElo(1200, 1210, true, 1, 0);
     }
 
     @Test
@@ -180,7 +182,7 @@ class PuzzleServiceTest {
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
         when(puzzleSessionRepository.findByUserFirebaseUidAndCompletedFalseAndFailedAttemptsGreaterThan("user-1", 0))
                 .thenReturn(List.of(abandonedSession));
-        when(eloService.calculateNewPlayerEloForFailedPuzzle(1000, 1000)).thenReturn(984);
+        when(eloService.calculateNewPlayerElo(1000, 1000, false, 0, 2)).thenReturn(984);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(puzzleRepository.findRandomPuzzleByThemeAndRating("fork", 884, 1084)).thenReturn(Optional.of(nextPuzzle));
@@ -252,14 +254,15 @@ class PuzzleServiceTest {
         assertThat(result).isPresent();
         assertThat(result.get().id()).isEqualTo("puzzle-1");
         assertThat(result.get().sessionId()).isEqualTo(10L);
-        assertThat(result.get().hintEloPenalty()).isEqualTo(4);
+        assertThat(result.get().hintEloPenalty()).isEqualTo(8);
 
         ArgumentCaptor<PuzzleSession> sessionCaptor = ArgumentCaptor.forClass(PuzzleSession.class);
         verify(puzzleSessionRepository).save(sessionCaptor.capture());
         assertThat(sessionCaptor.getValue().getUser()).isEqualTo(user);
         assertThat(sessionCaptor.getValue().getPuzzle()).isEqualTo(puzzle);
         assertThat(sessionCaptor.getValue().getRetryAttempt()).isEqualTo(failedAttempt);
-        verify(eloService).calculateHintEloPenalty(984, 1000);
+        verify(eloService).calculateNewPlayerElo(984, 1000, true, 0, 0);
+        verify(eloService).calculateNewPlayerElo(984, 1000, true, 1, 0);
     }
 
     @Test
@@ -383,7 +386,7 @@ class PuzzleServiceTest {
         PuzzleSession session = buildSession(10L, user, puzzle);
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
-        when(eloService.calculateNewPlayerElo(1000, 1000, 0, 0)).thenReturn(1016);
+        when(eloService.calculateNewPlayerElo(1000, 1000, true, 0, 0)).thenReturn(1016);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -416,7 +419,7 @@ class PuzzleServiceTest {
         session.setFailedAttempts(2);
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
-        when(eloService.calculateNewPlayerElo(1000, 1000, 1, 2)).thenReturn(987);
+        when(eloService.calculateNewPlayerElo(1000, 1000, true, 1, 2)).thenReturn(987);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -469,8 +472,7 @@ class PuzzleServiceTest {
 
         verify(puzzleAttemptRepository).save(failedAttempt);
         verify(userRepository, never()).save(any());
-        verify(eloService, never()).calculateNewPlayerElo(anyInt(), anyInt(), anyInt(), anyInt());
-        verify(eloService, never()).calculateNewPlayerEloForFailedPuzzle(anyInt(), anyInt());
+        verify(eloService, never()).calculateNewPlayerElo(anyInt(), anyInt(), anyBoolean(), anyInt(), anyInt());
     }
 
     @Test
@@ -519,7 +521,7 @@ class PuzzleServiceTest {
         session.setFailedAttempts(1);
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
-        when(eloService.calculateNewPlayerEloForFailedPuzzle(1000, 1000)).thenReturn(984);
+        when(eloService.calculateNewPlayerElo(1000, 1000, false, 1, 1)).thenReturn(984);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -539,7 +541,7 @@ class PuzzleServiceTest {
         assertThat(attemptCaptor.getValue().getIsSuccessful()).isFalse();
         assertThat(attemptCaptor.getValue().getHintsUsed()).isEqualTo(1);
         assertThat(attemptCaptor.getValue().getFailedAttempts()).isEqualTo(1);
-        verify(eloService).calculateNewPlayerEloForFailedPuzzle(1000, 1000);
+        verify(eloService).calculateNewPlayerElo(1000, 1000, false, 1, 1);
         verify(userRepository).save(user);
         verify(puzzleSessionRepository).save(session);
     }
@@ -575,7 +577,7 @@ class PuzzleServiceTest {
 
         verify(puzzleAttemptRepository, never()).save(any());
         verify(userRepository, never()).save(any());
-        verify(eloService, never()).calculateNewPlayerEloForFailedPuzzle(anyInt(), anyInt());
+        verify(eloService, never()).calculateNewPlayerElo(anyInt(), anyInt(), anyBoolean(), anyInt(), anyInt());
         verify(puzzleSessionRepository).save(session);
     }
 
@@ -607,7 +609,7 @@ class PuzzleServiceTest {
         session.setFailedAttempts(1);
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
         when(userRepository.findById("user-1")).thenReturn(Optional.of(user));
-        when(eloService.calculateNewPlayerElo(1000, 1000, 2, 1)).thenReturn(989);
+        when(eloService.calculateNewPlayerElo(1000, 1000, true, 2, 1)).thenReturn(989);
         when(puzzleAttemptRepository.save(any(PuzzleAttempt.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -616,7 +618,7 @@ class PuzzleServiceTest {
 
         // Then
         assertThat(result).isPresent();
-        verify(eloService).calculateNewPlayerElo(1000, 1000, 2, 1);
+        verify(eloService).calculateNewPlayerElo(1000, 1000, true, 2, 1);
     }
 
     @Test

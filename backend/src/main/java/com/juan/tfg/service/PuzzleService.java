@@ -29,6 +29,9 @@ public class PuzzleService {
     private static final int PUZZLE_RATING_RANGE = 100;
     private static final int MAX_HINT_COUNT = 3;
     private static final int AUTO_SURRENDER_FAILED_ATTEMPT_THRESHOLD = 0;
+    private static final int CLEAN_SOLVE_HINT_COUNT = 0;
+    private static final int CLEAN_SOLVE_FAILED_ATTEMPT_COUNT = 0;
+    private static final int SINGLE_HINT_COUNT = 1;
 
     private final PuzzleRepository puzzleRepository;
     private final PuzzleAttemptRepository puzzleAttemptRepository;
@@ -99,7 +102,26 @@ public class PuzzleService {
                 .nextMoveIndex(1)
                 .build();
         PuzzleSession savedSession = puzzleSessionRepository.save(session);
-        return PuzzleDTO.from(puzzle, savedSession.getId(), eloService.calculateHintEloPenalty(resolveUserElo(user), puzzle.getRating()));
+        return PuzzleDTO.from(puzzle, savedSession.getId(), calculateHintEloPenalty(resolveUserElo(user), puzzle.getRating()));
+    }
+
+    private int calculateHintEloPenalty(int userElo, int puzzleElo) {
+        int cleanSolveElo = eloService.calculateNewPlayerElo(
+                userElo,
+                puzzleElo,
+                true,
+                CLEAN_SOLVE_HINT_COUNT,
+                CLEAN_SOLVE_FAILED_ATTEMPT_COUNT
+        );
+        int singleHintElo = eloService.calculateNewPlayerElo(
+                userElo,
+                puzzleElo,
+                true,
+                SINGLE_HINT_COUNT,
+                CLEAN_SOLVE_FAILED_ATTEMPT_COUNT
+        );
+
+        return Math.max(0, cleanSolveElo - singleHintElo);
     }
 
     private int resolveMinRating(User user) {
@@ -241,9 +263,7 @@ public class PuzzleService {
             return updateRetriedAttempt(session, solved, user, currentElo);
         }
 
-        int newElo = solved
-                ? eloService.calculateNewPlayerElo(currentElo, puzzle.getRating(), hintsUsed, failedAttempts)
-                : eloService.calculateNewPlayerEloForFailedPuzzle(currentElo, puzzle.getRating());
+        int newElo = eloService.calculateNewPlayerElo(currentElo, puzzle.getRating(), solved, hintsUsed, failedAttempts);
         int eloChange = newElo - currentElo;
 
         PuzzleAttempt puzzleAttempt = PuzzleAttempt.builder()
