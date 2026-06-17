@@ -9,6 +9,7 @@ public class AbstractAITutorService implements AITutorService {
     }
 
     protected String getPrompt(String fen, List<String> solution, List<String> themes) {
+        String colour = getColourToMove(fen);
         return "You are an expert chess coach and puzzle instructor. Carefully analyze the following chess position and provide exactly three hints to help solve the problem.\n" +
                 "\n" +
                 "The hints must be progressively more specific:\n" +
@@ -32,11 +33,28 @@ public class AbstractAITutorService implements AITutorService {
                 "Hint 3: Text \n" +
                 "The tone should be instructive and clear, as if teaching a strong club player.\n" +
                 "\n" +
-                "The position is given in FEN format:" + fen + " and the solution is " + solution + "\n" +
+                "The position is given in FEN format:" + fen + " where " + colour + " moves and the solution is " + solution + "\n" +
                 "You can use the themes of the problem as a guide: " + themes;
     }
 
     protected String[] parseHints(String puzzleHints) {
         return puzzleHints.split("\\r?\\n");
+    }
+
+    private String getColourToMove(String fen) {
+        if (fen == null || fen.isBlank()) {
+            throw new IllegalArgumentException("FEN position must not be blank.");
+        }
+
+        String[] fenFields = fen.trim().split("\\s+");
+        if (fenFields.length < 2) {
+            throw new IllegalArgumentException("FEN position must include the side to move.");
+        }
+
+        return switch (fenFields[1]) {
+            case "w" -> "white";
+            case "b" -> "black";
+            default -> throw new IllegalArgumentException("FEN side to move must be either 'w' or 'b'.");
+        };
     }
 }
