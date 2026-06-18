@@ -14,6 +14,7 @@ import com.juan.tfg.repository.UserRepository;
 import com.juan.tfg.service.aitutor.AITutorService;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -68,6 +69,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns a rated themed puzzle for an existing user")
     void getRandomPuzzleForUser() {
         // Given
         User user = User.builder()
@@ -92,6 +94,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns empty when the user does not exist")
     void getRandomPuzzleForUser_withMissingUser() {
         // Given
         when(userRepository.findById("missing-user")).thenReturn(Optional.empty());
@@ -106,6 +109,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Uses the default Elo rating when the user rating is null")
     void getRandomPuzzleForUser_withNullUserElo() {
         // Given
         User user = User.builder()
@@ -125,6 +129,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Falls back to any puzzle in the theme when the rating range has no match")
     void getRandomPuzzleForUser_withThemeFallsBackToThemeOnlyWhenRatingRangeHasNoPuzzle() {
         // Given
         User user = User.builder()
@@ -149,6 +154,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Uses any puzzle in the rating range when no theme is provided")
     void getRandomPuzzleForUser_withoutThemeUsesAnyPuzzleInRatingRange() {
         // Given
         User user = User.builder()
@@ -169,6 +175,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Auto-surrenders an abandoned active session before returning the next puzzle")
     void getRandomPuzzleForUser_autoSurrendersActiveSessionWithFailedAttempt() {
         // Given
         User user = User.builder()
@@ -206,6 +213,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Does not auto-surrender when there are no failed active sessions")
     void getRandomPuzzleForUser_doesNotAutoSurrenderWhenNoFailedSessionsExist() {
         // Given
         User user = User.builder()
@@ -231,6 +239,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Creates a retry session from a random failed puzzle attempt")
     void getRandomFailedPuzzleForUser_withFailedAttemptCreatesRetrySession() {
         // Given
         User user = buildUser("user-1", 984);
@@ -266,6 +275,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns empty when the user has no failed puzzle attempts")
     void getRandomFailedPuzzleForUser_withNoFailedAttemptReturnsEmpty() {
         // Given
         when(puzzleAttemptRepository.findRandomFailedAttempt("user-1"))
@@ -280,6 +290,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Generates and returns the first hint for a valid puzzle session")
     void getPuzzleHint_withValidPuzzle() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5 g1f3", 1000);
@@ -304,6 +315,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns stored hints one at a time without regenerating them")
     void getPuzzleHint_returnsStoredHintsOneAtATime() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5 g1f3", 1000);
@@ -329,6 +341,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns empty when all hints are exhausted")
     void getPuzzleHint_withExhaustedHintsReturnsEmpty() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -348,6 +361,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns empty when the puzzle id is null")
     void getPuzzleHint_withNullPuzzleId() {
         // Given
         String puzzleId = null;
@@ -361,6 +375,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Propagates AI tutor failures when generating hints")
     void getPuzzleHint_withAiServiceException() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -379,6 +394,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Completes the puzzle and updates Elo after a correct final move")
     void verifyMove_withCorrectFinalMove() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -410,6 +426,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Records penalties when a final correct move follows failures")
     void verifyMove_withCorrectFinalMoveAfterFailures() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -439,6 +456,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Marks a retried failed puzzle as solved without changing Elo")
     void verifyMove_withRetriedFailedPuzzleMarksAttemptSolvedWithoutChangingElo() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -476,6 +494,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Increments failed attempts after an incorrect move")
     void verifyMove_withIncorrectMove() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -499,6 +518,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns empty when the submitted move is blank")
     void verifyMove_withBlankMove() {
         // Given
         String blankMove = " ";
@@ -512,6 +532,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Surrenders an active session and updates Elo as a failed attempt")
     void surrenderPuzzle_withActiveSessionUpdatesEloAsFailedAttempt() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -547,6 +568,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Surrenders a retried failed puzzle without changing Elo")
     void surrenderPuzzle_withRetriedFailedPuzzleDoesNotChangeElo() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -582,6 +604,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Returns empty when surrendering a completed session")
     void surrenderPuzzle_withCompletedSessionReturnsEmpty() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -600,6 +623,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Uses session hint and failure counters when verifying a final move")
     void verifyMove_withSessionCounters() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -622,6 +646,7 @@ class PuzzleServiceTest {
     }
 
     @Test
+    @DisplayName("Propagates repository failures while verifying a move")
     void verifyMove_withRepositoryException() {
         // Given
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1"))

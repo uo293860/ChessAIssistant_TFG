@@ -1,6 +1,7 @@
 package com.juan.tfg.model;
 
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,7 +10,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PuzzleTest {
 
     @Test
-    void getInitialMove_withMultipleMoves() {
+    @DisplayName("Returns the first move when multiple moves are present")
+    void getInitialMoveMultipleMoves() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves("e2e4 e7e5 g1f3")
@@ -23,6 +25,7 @@ class PuzzleTest {
     }
 
     @Test
+    @DisplayName("Returns the move at the requested index")
     void getMoveAtIndex() {
         // Given
         Puzzle puzzle = Puzzle.builder()
@@ -37,7 +40,8 @@ class PuzzleTest {
     }
 
     @Test
-    void getMoveAtIndexOR() {
+    @DisplayName("Returns an empty string when the requested move index is out of bounds")
+    void getMoveAtIndexOB() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves("e2e4 e7e5")
@@ -51,7 +55,8 @@ class PuzzleTest {
     }
 
     @Test
-    void getMoveCount_withBlankMoves() {
+    @DisplayName("Returns zero when the moves string is blank")
+    void getMoveCountBlankMoves() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves("   ")
@@ -65,7 +70,8 @@ class PuzzleTest {
     }
 
     @Test
-    void getInitialMove_withNullMoves() {
+    @DisplayName("Throws a NullPointerException when moves are null")
+    void getInitialMoveNullMoves() {
         // Given
         Puzzle puzzle = Puzzle.builder()
                 .moves(null)

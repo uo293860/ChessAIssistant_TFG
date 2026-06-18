@@ -52,8 +52,8 @@ public class AbstractAITutorService implements AITutorService {
         }
 
         return switch (fenFields[1]) {
-            case "w" -> "white";
-            case "b" -> "black";
+            case "w" -> "black"; // Since the fen gives the position without the oponent move we must invert the colour
+            case "b" -> "white";
             default -> throw new IllegalArgumentException("FEN side to move must be either 'w' or 'b'.");
         };
     }

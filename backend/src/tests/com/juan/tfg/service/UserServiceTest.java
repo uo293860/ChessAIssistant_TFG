@@ -12,6 +12,7 @@ import com.juan.tfg.repository.UserRepository;
 import com.juan.tfg.service.exception.DuplicateUsernameException;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -39,6 +40,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Returns the existing user for a known Firebase token")
     void getOrCreateUser_withExistingFirebaseTokenUser() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
@@ -58,6 +60,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Creates a new user from Firebase token details")
     void getOrCreateUser_withNewFirebaseTokenUser() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
@@ -78,6 +81,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Creates fallback email and username when Firebase details are missing")
     void getOrCreateUser_withMissingFirebaseEmailAndName() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
@@ -97,6 +101,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Generates a unique username when the preferred username is taken")
     void getOrCreateUser_withDuplicateUsername() {
         // Given
         FirebaseToken firebaseToken = mock(FirebaseToken.class);
@@ -118,6 +123,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Maps puzzle attempts to Elo history points")
     void getEloHistory_withAttempts() {
         // Given
         LocalDateTime attemptDate = LocalDateTime.of(2026, 5, 15, 10, 30);
@@ -147,6 +153,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Normalizes and saves a valid username update")
     void updateUsername_withValidUsername() {
         // Given
         User user = User.builder()
@@ -167,6 +174,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Returns the user unchanged when the username is the same")
     void updateUsername_withSameUsername() {
         // Given
         User user = User.builder()
@@ -185,6 +193,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Rejects username updates without letters or numbers")
     void updateUsername_withInvalidUsername() {
         // Given
         User user = User.builder()
@@ -205,6 +214,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Rejects username updates that duplicate another user")
     void updateUsername_withDuplicateUsername() {
         // Given
         User user = User.builder()
@@ -226,6 +236,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Returns an empty Elo history when the repository has no attempts")
     void getEloHistory_withEmptyRepositoryResult() {
         // Given
         when(puzzleAttemptRepository.findEloHistoryByUserId("user-1")).thenReturn(List.of());
@@ -238,6 +249,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Returns users ordered by Elo with the current user marked")
     void getUsersOrderedByEloRating() {
         // Given
         User highestRatedUser = User.builder()
@@ -277,6 +289,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Includes daily rank changes in the Elo leaderboard")
     void getUsersOrderedByEloRating_withDailyRankChanges() {
         // Given
         User climber = User.builder()
@@ -321,6 +334,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Propagates repository failures while loading Elo history")
     void getEloHistory_withRepositoryException() {
         // Given
         when(puzzleAttemptRepository.findEloHistoryByUserId("user-1")).thenThrow(new IllegalStateException("Database unavailable"));
@@ -335,6 +349,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Counts all puzzle attempts for a user")
     void countPuzzleAttempts_withExistingAttempts() {
         // Given
         when(puzzleAttemptRepository.countByFirebaseUid("user-1")).thenReturn(5L);
@@ -348,6 +363,7 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("Counts successful puzzle attempts for a user")
     void countSolvedPuzzles_withExistingSolvedAttempts() {
         // Given
         when(puzzleAttemptRepository.countSuccessfulByFirebaseUid("user-1")).thenReturn(3L);

@@ -1,6 +1,7 @@
 package com.juan.tfg.service;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.DisplayName;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -9,7 +10,8 @@ class EloServiceTest {
     private final EloService eloService = new EloService();
 
     @Test
-    void calculateNewPlayerElo_withEqualRatingsAndNoPenalties() {
+    @DisplayName("Increases rating for a clean solve against an equally rated puzzle")
+    void withEqualRatingsAndNoPenalties() {
         // Given
         int playerElo = 1000;
         int puzzleElo = 1000;
@@ -25,7 +27,8 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_withPenalties() {
+    @DisplayName("Applies hint and failed-attempt penalties to a solved puzzle")
+    void withPenalties() {
         // Given
         int playerElo = 1000;
         int puzzleElo = 1000;
@@ -41,7 +44,8 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_withManyPenalties() {
+    @DisplayName("Caps penalties when many hints and failed attempts are used")
+    void withManyPenalties() {
         // Given
         int playerElo = 1000;
         int puzzleElo = 1000;
@@ -57,7 +61,8 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_withFailedPuzzle() {
+    @DisplayName("Decreases rating when the puzzle is failed")
+    void withFailedPuzzle() {
         // Given
         int playerElo = 1000;
         int puzzleElo = 1000;
@@ -73,7 +78,8 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_withHarderPuzzle() {
+    @DisplayName("Awards more Elo for solving a harder puzzle")
+    void withHarderPuzzle() {
         // Given
         int playerElo = 1000;
         int equalPuzzleElo = 1000;
@@ -88,7 +94,8 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_singleHintCostsEightEloPoints() {
+    @DisplayName("Subtracts eight Elo points for a single hint")
+    void singleHintCostsEightEloPoints() {
         // When
         int equalPuzzleCleanSolve = eloService.calculateNewPlayerElo(1000, 1000, true, 0, 0);
         int equalPuzzleSingleHint = eloService.calculateNewPlayerElo(1000, 1000, true, 1, 0);
@@ -101,7 +108,8 @@ class EloServiceTest {
     }
 
     @Test
-    void calculateNewPlayerElo_ignoresNegativeCounters() {
+    @DisplayName("Ignores negative hint and failed-attempt counters")
+    void ignoresNegativeCounters() {
         // When
         int newElo = eloService.calculateNewPlayerElo(1000, 1000, true, -1, -1);
 

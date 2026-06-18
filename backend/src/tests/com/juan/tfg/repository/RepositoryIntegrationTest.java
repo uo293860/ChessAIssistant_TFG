@@ -3,6 +3,7 @@ package com.juan.tfg.repository;
 import com.juan.tfg.model.Puzzle;
 import com.juan.tfg.model.PuzzleAttempt;
 import com.juan.tfg.model.User;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -37,6 +38,7 @@ class RepositoryIntegrationTest {
     private PuzzleAttemptRepository puzzleAttemptRepository;
 
     @Test
+    @DisplayName("Finds an existing username")
     void existsByUsername_withPersistedUser() {
         // Given
         User user = buildUser("user-1", "player-one");
@@ -50,6 +52,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Returns false when the username does not exist")
     void existsByUsername_withMissingUsername() {
         // Given
         User user = buildUser("user-1", "player-one");
@@ -63,6 +66,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Orders users by Elo descending and username ascending")
     void findAllByOrderByEloRatingDescUsernameAsc() {
         // Given
         User lowerRatedUser = buildUser("user-1", "lower");
@@ -92,6 +96,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Finds a puzzle matching both theme and rating range")
     void findPuzzleByThemeAndRating() {
         // Given
         Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1250, "fork middlegame");
@@ -113,6 +118,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Returns empty when no puzzle matches the theme and rating range")
     void findPuzzleByThemeAndRating_shouldReturnEmpty() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", 1250, "fork middlegame");
@@ -126,6 +132,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Finds any themed puzzle inside the requested rating range")
     void findPuzzleByRating_returnsAnyThemeInRatingRange() {
         // Given
         Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1250, "pin endgame");
@@ -143,6 +150,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Finds a themed puzzle regardless of rating range")
     void findPuzzleByTheme_returnsThemeMatchOutsideRatingRange() {
         // Given
         Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1800, "fork middlegame");
@@ -160,6 +168,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Matches puzzle themes by whole tokens only")
     void findPuzzleByThemeAndRating_matchesWholeThemeTokensOnly() {
         // Given
         Puzzle mateInTwoPuzzle = buildPuzzle("puzzle-1", 1250, "mateIn2 middlegame");
@@ -173,6 +182,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Returns Elo history ordered by attempt date for one user")
     void findEloHistoryByUserId() {
         // Given
         User user = buildUser("user-1", "player-one");
@@ -207,6 +217,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Counts all puzzle attempts for a user")
     void countByFirebaseUid_shouldReturnUserAttemptCount() {
         // Given
         User user = buildUser("user-1", "player-one");
@@ -228,6 +239,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Counts successful puzzle attempts for a user")
     void countSuccessfulAttempts() {
         // Given
         User user = buildUser("user-1", "player-one");
@@ -247,6 +259,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Finds an unsolved failed attempt for a user")
     void findRandomFailedAttempt_returnsUnsolvedFailedAttemptForUser() {
         // Given
         User user = buildUser("user-1", "player-one");
@@ -274,6 +287,7 @@ class RepositoryIntegrationTest {
     }
 
     @Test
+    @DisplayName("Groups daily Elo changes by user since the provided date")
     void findDailyEloChangesSince_shouldGroupCurrentDayChangesByUser() {
         // Given
         User user = buildUser("user-1", "player-one");
