@@ -130,7 +130,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Falls back to any puzzle in the theme when the rating range has no match")
-    void getRandomPuzzleForUser_withThemeFallsBackToThemeOnlyWhenRatingRangeHasNoPuzzle() {
+    void getRandomPuzzleForUser_withThemeNoPuzzle() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -155,7 +155,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Uses any puzzle in the rating range when no theme is provided")
-    void getRandomPuzzleForUser_withoutThemeUsesAnyPuzzleInRatingRange() {
+    void getRandomPuzzleForUser_noThemeInRatingRange() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -176,7 +176,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Auto-surrenders an abandoned active session before returning the next puzzle")
-    void getRandomPuzzleForUser_autoSurrendersActiveSessionWithFailedAttempt() {
+    void getRandomPuzzleForUser_autoSurrendersOnF5() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -214,7 +214,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Does not auto-surrender when there are no failed active sessions")
-    void getRandomPuzzleForUser_doesNotAutoSurrenderWhenNoFailedSessionsExist() {
+    void getRandomPuzzleForUser_noAutoSurrenderNoFailedSessions() {
         // Given
         User user = User.builder()
                 .firebaseUid("user-1")
@@ -240,7 +240,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Creates a retry session from a random failed puzzle attempt")
-    void getRandomFailedPuzzleForUser_withFailedAttemptCreatesRetrySession() {
+    void getRandomFailedPuzzle_withFailedAttempt() {
         // Given
         User user = buildUser("user-1", 984);
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
@@ -276,7 +276,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Returns empty when the user has no failed puzzle attempts")
-    void getRandomFailedPuzzleForUser_withNoFailedAttemptReturnsEmpty() {
+    void getRandomFailedPuzzle_withNoFailedAttempt() {
         // Given
         when(puzzleAttemptRepository.findRandomFailedAttempt("user-1"))
                 .thenReturn(Optional.empty());
@@ -457,7 +457,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Marks a retried failed puzzle as solved without changing Elo")
-    void verifyMove_withRetriedFailedPuzzleMarksAttemptSolvedWithoutChangingElo() {
+    void verifyMove_withRetriedFailedPuzzle() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 984);
@@ -533,7 +533,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Surrenders an active session and updates Elo as a failed attempt")
-    void surrenderPuzzle_withActiveSessionUpdatesEloAsFailedAttempt() {
+    void surrenderPuzzle_withActiveSession() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);
@@ -569,7 +569,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Surrenders a retried failed puzzle without changing Elo")
-    void surrenderPuzzle_withRetriedFailedPuzzleDoesNotChangeElo() {
+    void surrenderPuzzle_withRetriedFailedPuzzle() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 984);
@@ -605,7 +605,7 @@ class PuzzleServiceTest {
 
     @Test
     @DisplayName("Returns empty when surrendering a completed session")
-    void surrenderPuzzle_withCompletedSessionReturnsEmpty() {
+    void surrenderPuzzle_withCompletedSession() {
         // Given
         Puzzle puzzle = buildPuzzle("puzzle-1", "e2e4 e7e5", 1000);
         User user = buildUser("user-1", 1000);

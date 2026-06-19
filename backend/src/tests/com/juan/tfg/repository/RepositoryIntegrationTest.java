@@ -151,7 +151,7 @@ class RepositoryIntegrationTest {
 
     @Test
     @DisplayName("Finds a themed puzzle regardless of rating range")
-    void findPuzzleByTheme_returnsThemeMatchOutsideRatingRange() {
+    void findPuzzleByTheme_returnsThemeMatchOR() {
         // Given
         Puzzle expectedPuzzle = buildPuzzle("puzzle-1", 1800, "fork middlegame");
         Puzzle outOfThemePuzzle = buildPuzzle("puzzle-2", 1250, "pin endgame");
@@ -169,7 +169,7 @@ class RepositoryIntegrationTest {
 
     @Test
     @DisplayName("Matches puzzle themes by whole tokens only")
-    void findPuzzleByThemeAndRating_matchesWholeThemeTokensOnly() {
+    void findPuzzleByThemeAndRating_matchesWholeTheme() {
         // Given
         Puzzle mateInTwoPuzzle = buildPuzzle("puzzle-1", 1250, "mateIn2 middlegame");
         entityManager.persistAndFlush(mateInTwoPuzzle);
@@ -218,7 +218,7 @@ class RepositoryIntegrationTest {
 
     @Test
     @DisplayName("Counts all puzzle attempts for a user")
-    void countByFirebaseUid_shouldReturnUserAttemptCount() {
+    void countByFirebaseUid() {
         // Given
         User user = buildUser("user-1", "player-one");
         User otherUser = buildUser("user-2", "player-two");
@@ -260,7 +260,7 @@ class RepositoryIntegrationTest {
 
     @Test
     @DisplayName("Finds an unsolved failed attempt for a user")
-    void findRandomFailedAttempt_returnsUnsolvedFailedAttemptForUser() {
+    void findRandomFailedAttempt() {
         // Given
         User user = buildUser("user-1", "player-one");
         User otherUser = buildUser("user-2", "player-two");
@@ -288,7 +288,7 @@ class RepositoryIntegrationTest {
 
     @Test
     @DisplayName("Groups daily Elo changes by user since the provided date")
-    void findDailyEloChangesSince_shouldGroupCurrentDayChangesByUser() {
+    void findDailyEloChanges() {
         // Given
         User user = buildUser("user-1", "player-one");
         User otherUser = buildUser("user-2", "player-two");

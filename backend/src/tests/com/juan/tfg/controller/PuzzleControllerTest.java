@@ -1,16 +1,11 @@
 package com.juan.tfg.controller;
 
-import com.juan.tfg.model.dto.PuzzleDTO;
-import com.juan.tfg.model.dto.PuzzleHintRequestDTO;
-import com.juan.tfg.model.dto.PuzzleHintResponseDTO;
-import com.juan.tfg.model.dto.PuzzleMoveVerificationRequestDTO;
-import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
-import com.juan.tfg.model.dto.PuzzleSurrenderRequestDTO;
-import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
+import com.juan.tfg.model.dto.*;
 import com.juan.tfg.service.PuzzleService;
 import com.juan.tfg.service.PuzzleThemeCatalog;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +30,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns a random puzzle for an authenticated user and valid theme")
     void getRandomPuzzle() {
         // Given
         PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 10L, "fen", 1200, "fork", "url", "e2e4", 4);
@@ -49,6 +45,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Rejects random puzzle requests without an authenticated user")
     void getRandomPuzzle_withBlankFirebaseUid() {
         // Given
         String firebaseUid = " ";
@@ -62,6 +59,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns not found when no random puzzle is available")
     void getRandomPuzzle_withMissingPuzzle() {
         // Given
         when(puzzleService.getRandomPuzzleForUser("user-1", "fork")).thenReturn(Optional.empty());
@@ -74,6 +72,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns a random puzzle when no theme is provided")
     void getRandomPuzzle_withoutTheme() {
         // Given
         PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 10L, "fen", 1200, "fork", "url", "e2e4", 4);
@@ -88,6 +87,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Rejects random puzzle requests with an unknown theme")
     void getRandomPuzzle_withUnknownTheme() {
         // When
         ResponseEntity<PuzzleDTO> response = puzzleController.getRandomPuzzle("user-1", "unknownTheme");
@@ -101,6 +101,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns the available puzzle themes for an authenticated user")
     void getPuzzleThemes() {
         // When
         var response = puzzleController.getPuzzleThemes("user-1");
@@ -112,7 +113,8 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getPuzzleThemes_withBlankFirebaseUid() {
+    @DisplayName("Rejects puzzle theme requests without an authenticated user")
+    void getPuzzleThemes_withNoFirebaseUid() {
         // When
         var response = puzzleController.getPuzzleThemes(" ");
 
@@ -121,6 +123,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns a puzzle hint for an existing puzzle session")
     void requestPuzzleHint_withExistingPuzzle() {
         // Given
         PuzzleHintRequestDTO request = new PuzzleHintRequestDTO(10L);
@@ -136,6 +139,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns not found when a puzzle hint cannot be generated")
     void requestPuzzleHint_withMissingPuzzle() {
         // Given
         PuzzleHintRequestDTO request = new PuzzleHintRequestDTO(10L);
@@ -149,7 +153,8 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void requestPuzzleHint_withBlankFirebaseUid() {
+    @DisplayName("Rejects puzzle hint requests without an authenticated user")
+    void requestPuzzleHint_withNoFirebaseUid() {
         // Given
         String firebaseUid = " ";
         PuzzleHintRequestDTO request = new PuzzleHintRequestDTO(10L);
@@ -167,6 +172,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns a random failed puzzle for an authenticated user")
     void getRandomFailedPuzzle() {
         // Given
         PuzzleDTO puzzle = new PuzzleDTO("puzzle-1", 11L, "fen", 1200, "fork", "url", "e2e4", 4);
@@ -181,7 +187,8 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void getRandomFailedPuzzle_withBlankFirebaseUid() {
+    @DisplayName("Rejects failed puzzle retry requests without an authenticated user")
+    void getRandomFailedPuzzle_withNoFirebaseUid() {
         // When
         ResponseEntity<PuzzleDTO> response = puzzleController.getRandomFailedPuzzle(" ");
 
@@ -193,6 +200,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns not found when the user has no failed puzzle attempts")
     void getRandomFailedPuzzle_withNoFailedAttempt() {
         // Given
         when(puzzleService.getRandomFailedPuzzleForUser("user-1")).thenReturn(Optional.empty());
@@ -205,6 +213,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns move verification results for a submitted move")
     void verifyMove() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
@@ -220,6 +229,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Rejects move verification requests without an authenticated user")
     void verifyMove_withNullFirebaseUid() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
@@ -238,6 +248,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns not found when move verification has no matching session")
     void verifyMove_withServiceReturningEmpty() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "missing-puzzle", "e7e5");
@@ -251,6 +262,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Propagates service failures while verifying a move")
     void verifyMove_withServiceException() {
         // Given
         PuzzleMoveVerificationRequestDTO request = new PuzzleMoveVerificationRequestDTO(10L, "puzzle-1", "e7e5");
@@ -267,6 +279,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns surrender results for an active puzzle session")
     void surrenderPuzzle() {
         // Given
         PuzzleSurrenderRequestDTO request = new PuzzleSurrenderRequestDTO(10L, "puzzle-1");
@@ -282,7 +295,8 @@ class PuzzleControllerTest {
     }
 
     @Test
-    void surrenderPuzzle_withBlankFirebaseUid() {
+    @DisplayName("Rejects surrender requests without an authenticated user")
+    void surrenderPuzzle_withNoFirebaseUid() {
         // Given
         PuzzleSurrenderRequestDTO request = new PuzzleSurrenderRequestDTO(10L, "puzzle-1");
 
@@ -299,6 +313,7 @@ class PuzzleControllerTest {
     }
 
     @Test
+    @DisplayName("Returns not found when surrendering has no matching session")
     void surrenderPuzzle_withServiceReturningEmpty() {
         // Given
         PuzzleSurrenderRequestDTO request = new PuzzleSurrenderRequestDTO(10L, "missing-puzzle");

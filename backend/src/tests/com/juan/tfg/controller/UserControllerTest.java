@@ -9,6 +9,7 @@ import com.juan.tfg.service.UserService;
 import com.juan.tfg.service.exception.DuplicateUsernameException;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Returns the current user profile with puzzle statistics and Elo history")
     void getCurrentUser_withExistingUser() {
         // Given
         User user = User.builder()
@@ -71,6 +73,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Returns users ordered by Elo rating for the leaderboard")
     void getUsersOrderedByEloRating() {
         // Given
         List<UserLeaderboardEntryDTO> leaderboard = List.of(
@@ -88,6 +91,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Updates the current user's username and returns the refreshed profile")
     void updateCurrentUsername_withValidUsername() {
         // Given
         User user = User.builder()
@@ -116,6 +120,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Returns bad request when the username update is invalid")
     void updateCurrentUsername_withInvalidUsername() {
         // Given
         when(userService.updateUsername("user-1", "!!!"))
@@ -135,6 +140,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Returns conflict when the username update duplicates another user")
     void updateCurrentUsername_withDuplicateUsername() {
         // Given
         when(userService.updateUsername("user-1", "taken"))
@@ -154,6 +160,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Returns the current user profile with an empty Elo history")
     void getCurrentUser_withEmptyEloHistory() {
         // Given
         User user = User.builder()
@@ -177,6 +184,7 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("Propagates service failures while loading the current user profile")
     void getCurrentUser_withServiceException() {
         // Given
         when(userService.getOrCreateUser("user-1")).thenThrow(new IllegalStateException("Firebase unavailable"));
