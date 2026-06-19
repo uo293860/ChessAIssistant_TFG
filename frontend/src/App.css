@@ -837,6 +837,31 @@
   margin-top: 14px;
 }
 
+.solution-summary {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.solution-summary span {
+  color: #626262;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.solution-summary strong {
+  color: #111111;
+  font-size: 0.98rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .completion-elo-item {
   display: grid;
   gap: 4px;

@@ -18,6 +18,7 @@ type GameStatePanelProps = {
   failedAttempts: number
   updatedElo: number | null
   updatedEloChange: number | null
+  surrenderedSolutionMoves: string[]
   puzzleActionError: string | null
 }
 
@@ -135,6 +136,7 @@ export function GameStatePanel({
   failedAttempts,
   updatedElo,
   updatedEloChange,
+  surrenderedSolutionMoves,
   puzzleActionError,
 }: GameStatePanelProps) {
   const panelCopy = getGameStateCopy({
@@ -151,6 +153,7 @@ export function GameStatePanel({
     selectedSquare,
     failedAttempts,
   })
+  const surrenderedSolution = surrenderedSolutionMoves.join(' ')
 
   return (
     <div className="board-panel">
@@ -160,6 +163,12 @@ export function GameStatePanel({
         {isPuzzleLoading || !puzzle ? 'Puzzle Elo loading...' : `Puzzle Elo: ${puzzle.rating}`}
       </p>
       <p className="panel-copy">{panelCopy}</p>
+      {isPuzzleSurrendered ? (
+        <div className="solution-summary" aria-label="Puzzle solution">
+          <span>Solution</span>
+          <strong>{surrenderedSolution || 'No solution moves were returned.'}</strong>
+        </div>
+      ) : null}
       {puzzleActionError ? <p className="feedback error">{puzzleActionError}</p> : null}
       {(isPuzzleCompleted || isPuzzleSurrendered) && updatedElo !== null && updatedEloChange !== null ? (
         <div className="completion-elo-summary" aria-label="Puzzle Elo result">

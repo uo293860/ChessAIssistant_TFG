@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -283,7 +284,7 @@ class PuzzleControllerTest {
     void surrenderPuzzle() {
         // Given
         PuzzleSurrenderRequestDTO request = new PuzzleSurrenderRequestDTO(10L, "puzzle-1");
-        PuzzleSurrenderResponseDTO surrender = new PuzzleSurrenderResponseDTO(true, 984, -16);
+        PuzzleSurrenderResponseDTO surrender = new PuzzleSurrenderResponseDTO(true, 984, -16, List.of("e7e5"));
         when(puzzleService.surrenderPuzzle("user-1", 10L, "puzzle-1")).thenReturn(Optional.of(surrender));
 
         // When

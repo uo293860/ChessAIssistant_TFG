@@ -44,6 +44,7 @@ export function usePuzzleTrainer() {
   const [updatedEloChange, setUpdatedEloChange] = useState<number | null>(null)
   const [isPuzzleCompleted, setIsPuzzleCompleted] = useState(false)
   const [isPuzzleSurrendered, setIsPuzzleSurrendered] = useState(false)
+  const [surrenderedSolutionMoves, setSurrenderedSolutionMoves] = useState<string[]>([])
   const [isRepeatingFailedPuzzle, setIsRepeatingFailedPuzzle] = useState(false)
   const [puzzleActionError, setPuzzleActionError] = useState<string | null>(null)
   const [incorrectMoveSquare, setIncorrectMoveSquare] = useState<Square | null>(null)
@@ -262,6 +263,7 @@ export function usePuzzleTrainer() {
         sessionId: puzzle.sessionId,
         puzzleId: puzzle.id,
       })
+      setSurrenderedSolutionMoves(surrender.solutionMoves.map((move) => move.trim()).filter(Boolean))
       applyPuzzleResult(surrender.puzzleCompleted, surrender.newElo, surrender.eloChange, true)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to surrender the puzzle.'
@@ -290,6 +292,7 @@ export function usePuzzleTrainer() {
     setUpdatedEloChange(null)
     setIsPuzzleCompleted(false)
     setIsPuzzleSurrendered(false)
+    setSurrenderedSolutionMoves([])
     setIsRepeatingFailedPuzzle(repeatingFailedPuzzle)
     setPuzzleActionError(null)
     clearSelection()
@@ -530,6 +533,7 @@ export function usePuzzleTrainer() {
       isSurrendering,
       isPuzzleCompleted,
       isPuzzleSurrendered,
+      surrenderedSolutionMoves,
       isRepeatingFailedPuzzle,
       pendingPromotion,
       selectedSquare,

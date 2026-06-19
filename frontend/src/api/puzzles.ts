@@ -51,6 +51,7 @@ export type SurrenderPuzzleResponseDTO = {
   puzzleCompleted: boolean
   newElo: number | null
   eloChange: number | null
+  solutionMoves: string[]
 }
 
 const buildRandomPuzzlePath = (themeId: string | null) => {

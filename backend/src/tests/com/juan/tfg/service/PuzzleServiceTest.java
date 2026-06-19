@@ -554,6 +554,7 @@ class PuzzleServiceTest {
         assertThat(result.get().puzzleCompleted()).isTrue();
         assertThat(result.get().newElo()).isEqualTo(984);
         assertThat(result.get().eloChange()).isEqualTo(-16);
+        assertThat(result.get().solutionMoves()).containsExactly("e7e5");
         assertThat(session.isCompleted()).isTrue();
         assertThat(user.getEloRating()).isEqualTo(984);
 
@@ -594,6 +595,7 @@ class PuzzleServiceTest {
         assertThat(result).isPresent();
         assertThat(result.get().newElo()).isEqualTo(984);
         assertThat(result.get().eloChange()).isZero();
+        assertThat(result.get().solutionMoves()).containsExactly("e7e5");
         assertThat(session.isCompleted()).isTrue();
         assertThat(failedAttempt.getIsSuccessful()).isFalse();
 

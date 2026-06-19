@@ -247,7 +247,8 @@ public class PuzzleService {
         return new PuzzleSurrenderResponseDTO(
                 true,
                 eloUpdate.newElo(),
-                eloUpdate.eloChange()
+                eloUpdate.eloChange(),
+                getSolutionMoves(session.getPuzzle())
         );
     }
 
@@ -369,9 +370,7 @@ public class PuzzleService {
     }
 
     private String[] generateHints(Puzzle puzzle) {
-        List<String> solution = Arrays.stream(puzzle.getMoves().trim().split("\\s+"))
-                .filter(move -> !move.isBlank())
-                .toList();
+        List<String> solution = getPuzzleMoves(puzzle);
 
         List<String> themes = Arrays.stream(Optional.ofNullable(puzzle.getThemes()).orElse("").split("\\s+"))
                 .filter(theme -> !theme.isBlank())
@@ -380,5 +379,20 @@ public class PuzzleService {
         return aITutorService.getHints(puzzle.getFen(), solution, themes);
     }
 
+    private List<String> getSolutionMoves(Puzzle puzzle) {
+        List<String> moves = getPuzzleMoves(puzzle);
+
+        if (moves.size() <= 1) {
+            return List.of();
+        }
+
+        return moves.subList(1, moves.size());
+    }
+
+    private List<String> getPuzzleMoves(Puzzle puzzle) {
+        return Arrays.stream(Optional.ofNullable(puzzle.getMoves()).orElse("").trim().split("\\s+"))
+                .filter(move -> !move.isBlank())
+                .toList();
+    }
 
 }
