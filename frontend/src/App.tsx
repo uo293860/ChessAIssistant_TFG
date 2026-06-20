@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   GoogleAuthProvider,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -28,6 +29,7 @@ const ABOUT_ROUTE: AppRoute = '/about'
 const MIN_PASSWORD_LENGTH = 6
 const PASSWORD_REQUIRES_UPPERCASE = /[A-Z]/
 const PASSWORD_REQUIREMENT_MESSAGE = `Use a password with at least ${MIN_PASSWORD_LENGTH} characters and one capital letter.`
+const PASSWORD_RESET_SENT_MESSAGE = 'If an account exists for that email, Firebase will send a password reset link.'
 
 const getFirebaseAuthErrorMessage = (firebaseError: unknown, fallbackMessage: string) => {
   if (!(firebaseError instanceof FirebaseError)) {
@@ -59,6 +61,25 @@ const getFirebaseAuthErrorMessage = (firebaseError: unknown, fallbackMessage: st
       return 'This sign-in method is not enabled yet. Contact support if the problem continues.'
     default:
       return fallbackMessage
+  }
+}
+
+const getPasswordResetErrorMessage = (firebaseError: unknown) => {
+  if (!(firebaseError instanceof FirebaseError)) {
+    return 'We could not start password recovery. Try again in a moment.'
+  }
+
+  switch (firebaseError.code) {
+    case 'auth/invalid-email':
+      return 'Enter a valid email address before requesting a password reset.'
+    case 'auth/network-request-failed':
+      return 'We could not reach the password recovery service. Check your connection and try again.'
+    case 'auth/too-many-requests':
+      return 'Password recovery is temporarily limited after several attempts. Wait a moment and try again.'
+    case 'auth/operation-not-allowed':
+      return 'Password recovery is not enabled yet. Contact support if the problem continues.'
+    default:
+      return 'We could not start password recovery. Try again in a moment.'
   }
 }
 
@@ -206,6 +227,33 @@ function App() {
     }
   }
 
+  const handlePasswordRecovery = async () => {
+    resetMessages()
+
+    const normalizedEmail = email.trim()
+
+    if (!normalizedEmail) {
+      setError('Enter the email address linked to your account before requesting a password reset.')
+      return
+    }
+
+    setIsLoading(true)
+
+    try {
+      await sendPasswordResetEmail(auth, normalizedEmail)
+      setFeedback(PASSWORD_RESET_SENT_MESSAGE)
+    } catch (firebaseError) {
+      if (firebaseError instanceof FirebaseError && firebaseError.code === 'auth/user-not-found') {
+        setFeedback(PASSWORD_RESET_SENT_MESSAGE)
+        return
+      }
+
+      setError(getPasswordResetErrorMessage(firebaseError))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleSignOut = async () => {
     resetMessages()
     setIsLoading(true)
@@ -325,6 +373,17 @@ function App() {
             />
             <small>Minimum {MIN_PASSWORD_LENGTH} characters and one capital letter.</small>
           </label>
+
+          {mode === 'login' ? (
+            <button
+              type="button"
+              className="password-recovery-action"
+              onClick={() => void handlePasswordRecovery()}
+              disabled={isLoading}
+            >
+              I forgot my password
+            </button>
+          ) : null}
 
           {mode === 'register' ? (
             <label>
