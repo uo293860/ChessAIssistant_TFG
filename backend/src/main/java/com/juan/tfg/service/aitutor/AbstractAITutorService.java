@@ -38,7 +38,12 @@ public class AbstractAITutorService implements AITutorService {
     }
 
     protected String[] parseHints(String puzzleHints) {
-        return puzzleHints.split("\\r?\\n");
+        String[] answer = puzzleHints.split("\\r?\\n");
+        String[] hints = new String[answer.length-1];
+        for (int i = 1; i < answer.length; i++) {
+            hints[i-1] = answer[i];
+        }
+        return hints;
     }
 
     private String getColourToMove(String fen) {
