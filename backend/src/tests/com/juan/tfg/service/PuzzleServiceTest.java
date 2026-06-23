@@ -298,7 +298,12 @@ class PuzzleServiceTest {
         PuzzleSession session = buildSession(10L, user, puzzle);
         String[] hints = {"Control the center.", "Develop a knight."};
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
-        when(aITutorService.getHints(eq("start-fen"), eq(List.of("e2e4", "e7e5", "g1f3")), eq(List.of("opening", "short"))))
+        when(aITutorService.getHints(
+                eq("start-fen"),
+                eq(List.of("e2e4", "e7e5", "g1f3")),
+                eq(List.of("opening", "short")),
+                eq("e2e4")
+        ))
                 .thenReturn(hints);
 
         // When
@@ -323,7 +328,7 @@ class PuzzleServiceTest {
         PuzzleSession session = buildSession(10L, user, puzzle);
         String[] hints = {"Control the center.", "Develop a knight."};
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
-        when(aITutorService.getHints(any(), any(), any())).thenReturn(hints);
+        when(aITutorService.getHints(any(), any(), any(), any())).thenReturn(hints);
 
         // When
         Optional<PuzzleHintResponseDTO> firstHint = puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1");
@@ -337,7 +342,7 @@ class PuzzleServiceTest {
         assertThat(secondHint.get().hintNumber()).isEqualTo(2);
         assertThat(secondHint.get().hintsExhausted()).isTrue();
         assertThat(session.getHintsUsed()).isEqualTo(2);
-        verify(aITutorService, times(1)).getHints(any(), any(), any());
+        verify(aITutorService, times(1)).getHints(any(), any(), any(), any());
     }
 
     @Test
@@ -382,7 +387,7 @@ class PuzzleServiceTest {
         User user = buildUser("user-1", 1000);
         PuzzleSession session = buildSession(10L, user, puzzle);
         when(puzzleSessionRepository.findByIdAndUserFirebaseUid(10L, "user-1")).thenReturn(Optional.of(session));
-        when(aITutorService.getHints(any(), any(), any())).thenThrow(new IllegalStateException("AI unavailable"));
+        when(aITutorService.getHints(any(), any(), any(), any())).thenThrow(new IllegalStateException("AI unavailable"));
 
         // When
         ThrowingCallable action = () -> puzzleService.getPuzzleHint("user-1", 10L, "puzzle-1");

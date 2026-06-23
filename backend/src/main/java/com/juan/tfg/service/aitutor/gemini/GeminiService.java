@@ -26,11 +26,11 @@ public class GeminiService extends AbstractAITutorService {
     private String apiKey;
 
     @Override
-    public String[] getHints(String fen, List<String> solution, List<String> themes) {
+    public String[] getHints(String fen, List<String> solution, List<String> themes, String initialMove) {
         try {
             System.out.println("Starting Gemini request...");
 
-            String prompt = getPrompt(fen, solution, themes);
+            String prompt = getPrompt(fen, solution, themes,  initialMove);
 
             JsonNode response = restClient.post()
                     .uri(GEMINI_API_URL.formatted(MODEL_NAME))

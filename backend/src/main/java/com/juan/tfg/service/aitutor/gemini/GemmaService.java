@@ -26,8 +26,8 @@ public class GemmaService extends AbstractAITutorService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
-    public String[] getHints(String fen, List<String> solution, List<String> themes) {
-        String prompt = getPrompt(fen, solution, themes);
+    public String[] getHints(String fen, List<String> solution, List<String> themes, String initialMove) {
+        String prompt = getPrompt(fen, solution, themes, initialMove);
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", modelName);
         requestBody.put("prompt", prompt);

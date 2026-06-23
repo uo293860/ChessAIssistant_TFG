@@ -4,8 +4,8 @@ import com.juan.tfg.model.Puzzle;
 import com.juan.tfg.model.PuzzleAttempt;
 import com.juan.tfg.model.PuzzleSession;
 import com.juan.tfg.model.User;
-import com.juan.tfg.model.dto.PuzzleHintResponseDTO;
 import com.juan.tfg.model.dto.PuzzleDTO;
+import com.juan.tfg.model.dto.PuzzleHintResponseDTO;
 import com.juan.tfg.model.dto.PuzzleMoveVerificationResponseDTO;
 import com.juan.tfg.model.dto.PuzzleSurrenderResponseDTO;
 import com.juan.tfg.repository.PuzzleAttemptRepository;
@@ -376,7 +376,7 @@ public class PuzzleService {
                 .filter(theme -> !theme.isBlank())
                 .toList();
 
-        return aITutorService.getHints(puzzle.getFen(), solution, themes);
+        return aITutorService.getHints(puzzle.getFen(), solution, themes, puzzle.getInitialMove());
     }
 
     private List<String> getSolutionMoves(Puzzle puzzle) {
