@@ -40,9 +40,7 @@ public class AbstractAITutorService implements AITutorService {
     protected String[] parseHints(String puzzleHints) {
         String[] answer = puzzleHints.split("\\r?\\n");
         String[] hints = new String[answer.length-1];
-        for (int i = 1; i < answer.length; i++) {
-            hints[i-1] = answer[i];
-        }
+        System.arraycopy(answer, 1, hints, 0, answer.length - 1);
         return hints;
     }
 
