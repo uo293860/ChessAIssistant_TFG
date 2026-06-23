@@ -16,9 +16,9 @@ public class AbstractAITutorService implements AITutorService {
                 "\n" +
                 "Hint 1 should be very general and focus on high-level evaluation or strategic ideas, identifying weaknesses and strengths over the board.\n" +
                 "\n" +
-                "Hint 2 should narrow the focus to relevant tactical or positional themes. You can mention the specific theme of the puzzle.\n" +
+                "Hint 2 should narrow the focus to relevant tactical or positional themes. Mention the specific theme of the puzzle.\n" +
                 "\n" +
-                "Hint 3 should make the solution quite clear, while still not explicitly stating the exact move. You can mention specific squares or pieces that are especially important for the puzzle. \n" +
+                "Hint 3 should make the solution quite clear, while still not explicitly stating the exact move. Mention specific squares or pieces that are especially important for the puzzle. \n" +
                 "\n" +
                 "Do NOT mention any specific move or explicit piece movement.\n" +
                 "\n" +
