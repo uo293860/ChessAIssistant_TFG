@@ -91,10 +91,22 @@ public class PuzzleThemeCatalog {
             .map(PuzzleThemeDTO::id)
             .collect(Collectors.toUnmodifiableSet());
 
+    /**
+     * Returns every supported puzzle theme.
+     *
+     * @return the immutable list of available puzzle themes.
+     */
     public List<PuzzleThemeDTO> getThemes() {
         return THEMES;
     }
 
+    /**
+     * Resolves and validates a user-selected puzzle theme.
+     *
+     * @param themeId the raw theme identifier from the request.
+     * @return the normalized theme identifier, or an empty result when no theme was selected.
+     * @throws IllegalArgumentException if the theme identifier is not supported.
+     */
     public Optional<String> resolveSelectedThemeId(String themeId) {
         if (themeId == null || themeId.isBlank()) {
             return Optional.empty();

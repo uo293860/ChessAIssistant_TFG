@@ -16,6 +16,9 @@ public class PuzzleImporterService {
 
     private PuzzleRepository puzzleRepository;
 
+    /**
+     * Imports the bundled Lichess puzzle CSV when the database is empty.
+     */
     @PostConstruct
     public void init() {
         long count = puzzleRepository.count();
@@ -27,6 +30,9 @@ public class PuzzleImporterService {
         importPuzzles();
     }
 
+    /**
+     * Reads bundled Lichess puzzles from CSV and stores a limited seed set in the database.
+     */
     private void importPuzzles() {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(
                 getClass().getResourceAsStream("/data/lichess_db_puzzle.csv"), StandardCharsets.UTF_8))) {

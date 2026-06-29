@@ -15,6 +15,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
+    /**
+     * Configures HTTP security, CORS, CSRF, authorization rules, and Firebase token authentication.
+     *
+     * @param http the Spring Security HTTP configuration builder.
+     * @param firebaseTokenFilter the filter that validates Firebase bearer tokens.
+     * @return the configured security filter chain.
+     * @throws Exception if Spring Security cannot build the filter chain.
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, FirebaseTokenFilter firebaseTokenFilter) throws Exception {
         http.cors(Customizer.withDefaults())
@@ -28,6 +36,13 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Creates the Firebase token filter used by the security filter chain.
+     *
+     * @param userService the service that creates or loads authenticated users.
+     * @param firebaseApp the initialized Firebase application.
+     * @return a Firebase token filter instance.
+     */
     @Bean
     public FirebaseTokenFilter firebaseTokenFilter(UserService userService, FirebaseApp firebaseApp) {
         return new FirebaseTokenFilter(userService, firebaseApp);

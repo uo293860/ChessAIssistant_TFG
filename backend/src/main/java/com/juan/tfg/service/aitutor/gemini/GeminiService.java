@@ -25,6 +25,15 @@ public class GeminiService extends AbstractAITutorService {
     @Value("${GEMINI_API_KEY}")
     private String apiKey;
 
+    /**
+     * Requests puzzle hints from Gemini and parses the provider response.
+     *
+     * @param fen the puzzle position in FEN notation.
+     * @param solution the puzzle solution moves.
+     * @param themes the puzzle themes.
+     * @param initialMove the initial opponent move that starts the puzzle.
+     * @return generated hint lines or a fallback error hint.
+     */
     @Override
     public String[] getHints(String fen, List<String> solution, List<String> themes, String initialMove) {
         try {
@@ -49,6 +58,12 @@ public class GeminiService extends AbstractAITutorService {
         return new String[]{"Error generating hints."};
     }
 
+    /**
+     * Builds the Gemini request payload for text generation.
+     *
+     * @param prompt the prompt to send to Gemini.
+     * @return the JSON-serializable request body.
+     */
     private Map<String, Object> buildRequestBody(String prompt) {
         return Map.of(
                 "contents", List.of(Map.of(
@@ -60,6 +75,13 @@ public class GeminiService extends AbstractAITutorService {
         );
     }
 
+    /**
+     * Extracts non-thought text from the Gemini response.
+     *
+     * @param response the raw Gemini JSON response.
+     * @return the concatenated response text.
+     * @throws IllegalStateException if the response does not contain usable text.
+     */
     private String extractResponseText(JsonNode response) {
         if (response == null) {
             throw new IllegalStateException("Gemini response is empty.");

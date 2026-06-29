@@ -26,6 +26,15 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
     private final UserService userService;
     private final FirebaseApp firebaseApp;
 
+    /**
+     * Authenticates requests that include a Firebase bearer token and stores the UID in the security context.
+     *
+     * @param request the current HTTP request.
+     * @param response the current HTTP response.
+     * @param filterChain the remaining servlet filter chain.
+     * @throws ServletException if the next filter fails with a servlet error.
+     * @throws IOException if the next filter fails with an I/O error.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

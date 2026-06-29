@@ -25,6 +25,16 @@ public class GemmaService extends AbstractAITutorService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    /**
+     * Requests puzzle hints from the local Ollama Gemma provider.
+     *
+     * @param fen the puzzle position in FEN notation.
+     * @param solution the puzzle solution moves.
+     * @param themes the puzzle themes.
+     * @param initialMove the initial opponent move that starts the puzzle.
+     * @return generated hint lines.
+     * @throws RuntimeException if the local tutor does not return a valid response.
+     */
     @Override
     public String[] getHints(String fen, List<String> solution, List<String> themes, String initialMove) {
         String prompt = getPrompt(fen, solution, themes, initialMove);

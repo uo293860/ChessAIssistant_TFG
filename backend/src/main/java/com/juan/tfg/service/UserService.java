@@ -44,11 +44,23 @@ public class UserService {
     private final FirebaseApp firebaseApp;
     private final PuzzleAttemptRepository puzzleAttemptRepository;
 
+    /**
+     * Loads a user by Firebase UID or creates one from Firebase Auth when missing.
+     *
+     * @param firebaseUid the Firebase user identifier.
+     * @return the existing or newly created user.
+     */
     @Transactional
     public User getOrCreateUser(String firebaseUid) {
         return userRepository.findById(firebaseUid).orElseGet(() -> createUserFromFirebase(firebaseUid));
     }
 
+    /**
+     * Loads a user by Firebase token or creates one using the token claims.
+     *
+     * @param firebaseToken the verified Firebase token.
+     * @return the existing or newly created user.
+     */
     @Transactional
     public User getOrCreateUser(FirebaseToken firebaseToken) {
         Optional<User> existingUser = userRepository.findById(firebaseToken.getUid());
@@ -63,6 +75,12 @@ public class UserService {
         return saveNewUser(firebaseToken.getUid(), email, username);
     }
 
+    /**
+     * Returns the user's Elo history in chronological order.
+     *
+     * @param firebaseUid the Firebase user identifier.
+     * @return the user's Elo history entries.
+     */
     @Transactional(readOnly = true)
     public List<EloHistoryPointDTO> getEloHistory(String firebaseUid) {
         return puzzleAttemptRepository.findEloHistoryByUserId(firebaseUid).stream()
@@ -70,6 +88,15 @@ public class UserService {
                 .toList();
     }
 
+    /**
+     * Validates and updates a user's username.
+     *
+     * @param firebaseUid the Firebase user identifier.
+     * @param requestedUsername the requested username value.
+     * @return the updated user.
+     * @throws DuplicateUsernameException if another user already owns the username.
+     * @throws IllegalArgumentException if the requested username is invalid.
+     */
     @Transactional
     public User updateUsername(String firebaseUid, String requestedUsername) {
         User user = getOrCreateUser(firebaseUid);
@@ -87,6 +114,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    /**
+     * Returns all users as leaderboard entries ordered by current Elo.
+     *
+     * @param currentFirebaseUid the Firebase UID of the requesting user.
+     * @return leaderboard entries with daily rank movement and current-user marking.
+     */
     @Transactional(readOnly = true)
     public List<UserLeaderboardEntryDTO> getUsersOrderedByEloRating(String currentFirebaseUid) {
         List<User> currentLeaderboard = userRepository.findAllByOrderByEloRatingDescUsernameAsc();
@@ -102,6 +135,11 @@ public class UserService {
                 .toList();
     }
 
+    /**
+     * Loads the total Elo changes produced since the start of the current day.
+     *
+     * @return daily Elo changes keyed by Firebase UID.
+     */
     private Map<String, Integer> getDailyEloChanges() {
         return puzzleAttemptRepository.findDailyEloChangesSince(LocalDate.now().atStartOfDay()).stream()
                 .collect(Collectors.toMap(
@@ -110,6 +148,13 @@ public class UserService {
                 ));
     }
 
+    /**
+     * Reconstructs leaderboard ranks as they were at the start of the current day.
+     *
+     * @param currentLeaderboard users ordered by current leaderboard position.
+     * @param dailyEloChanges daily Elo changes keyed by Firebase UID.
+     * @return start-of-day ranks keyed by Firebase UID.
+     */
     private Map<String, Integer> getStartOfDayRanks(List<User> currentLeaderboard, Map<String, Integer> dailyEloChanges) {
         List<User> startOfDayLeaderboard = currentLeaderboard.stream()
                 .sorted(Comparator
@@ -126,14 +171,35 @@ public class UserService {
                 ));
     }
 
+    /**
+     * Calculates a user's Elo at the start of the day.
+     *
+     * @param user the user whose historical Elo should be calculated.
+     * @param dailyEloChanges daily Elo changes keyed by Firebase UID.
+     * @return the user's reconstructed start-of-day Elo.
+     */
     private int getStartOfDayElo(User user, Map<String, Integer> dailyEloChanges) {
         return resolveEloRating(user) - dailyEloChanges.getOrDefault(user.getFirebaseUid(), 0);
     }
 
+    /**
+     * Resolves a user's Elo rating, using the default rating when the stored value is null.
+     *
+     * @param user the user whose Elo should be read.
+     * @return the resolved Elo rating.
+     */
     private int resolveEloRating(User user) {
         return Optional.ofNullable(user.getEloRating()).orElse(1000);
     }
 
+    /**
+     * Converts a user into a leaderboard response entry.
+     *
+     * @param user the user to convert.
+     * @param dailyRankChange the user's rank movement since the start of the day.
+     * @param currentFirebaseUid the Firebase UID of the requesting user.
+     * @return the leaderboard entry DTO.
+     */
     private UserLeaderboardEntryDTO toLeaderboardEntryDTO(User user, int dailyRankChange, String currentFirebaseUid) {
         return new UserLeaderboardEntryDTO(
                 user.getUsername(),
@@ -143,6 +209,12 @@ public class UserService {
         );
     }
 
+    /**
+     * Converts a puzzle attempt into an Elo history point.
+     *
+     * @param puzzleAttempt the attempt to convert.
+     * @return the Elo history point DTO.
+     */
     private EloHistoryPointDTO toEloHistoryPointDTO(PuzzleAttempt puzzleAttempt) {
         return new EloHistoryPointDTO(
                 puzzleAttempt.getId(),
@@ -153,16 +225,34 @@ public class UserService {
         );
     }
 
+    /**
+     * Counts all puzzle attempts made by a user.
+     *
+     * @param firebaseUid the Firebase user identifier.
+     * @return the number of puzzle attempts.
+     */
     @Transactional(readOnly = true)
     public long countPuzzleAttempts(String firebaseUid) {
         return puzzleAttemptRepository.countByFirebaseUid(firebaseUid);
     }
 
+    /**
+     * Counts successfully solved puzzles for a user.
+     *
+     * @param firebaseUid the Firebase user identifier.
+     * @return the number of successful puzzle attempts.
+     */
     @Transactional(readOnly = true)
     public long countSolvedPuzzles(String firebaseUid) {
         return puzzleAttemptRepository.countSuccessfulByFirebaseUid(firebaseUid);
     }
 
+    /**
+     * Creates a user by loading the authoritative profile from Firebase Auth.
+     *
+     * @param firebaseUid the Firebase user identifier.
+     * @return the newly saved user.
+     */
     private User createUserFromFirebase(String firebaseUid) {
         try {
             UserRecord firebaseUser = FirebaseAuth.getInstance(firebaseApp).getUser(firebaseUid);
@@ -175,6 +265,14 @@ public class UserService {
         }
     }
 
+    /**
+     * Persists a new user record in the application database.
+     *
+     * @param firebaseUid the Firebase user identifier.
+     * @param email the normalized email address.
+     * @param username the unique username.
+     * @return the saved user entity.
+     */
     private User saveNewUser(String firebaseUid, String email, String username) {
         User newUser = User.builder()
                 .firebaseUid(firebaseUid)
@@ -187,6 +285,13 @@ public class UserService {
         return savedUser;
     }
 
+    /**
+     * Resolves the stored user email, falling back to a local Firebase-derived address.
+     *
+     * @param email the email from Firebase, when present.
+     * @param firebaseUid the Firebase user identifier.
+     * @return the normalized email value.
+     */
     private String resolveEmail(String email, String firebaseUid) {
         if (email != null && !email.isBlank()) {
             return email.trim().toLowerCase(Locale.ROOT);
@@ -195,6 +300,13 @@ public class UserService {
         return firebaseUid + "@firebase.local";
     }
 
+    /**
+     * Builds a unique username from display name or email data.
+     *
+     * @param displayName the Firebase display name.
+     * @param email the Firebase email address.
+     * @return a unique username value.
+     */
     private String resolveUniqueUsername(String displayName, String email) {
         String baseUsername = resolveBaseUsername(displayName, email);
         String username = truncate(baseUsername, MAX_USERNAME_LENGTH);
@@ -206,6 +318,13 @@ public class UserService {
         return resolveRandomizedUsername(baseUsername);
     }
 
+    /**
+     * Resolves the base username before uniqueness suffixes are added.
+     *
+     * @param displayName the Firebase display name.
+     * @param email the Firebase email address.
+     * @return the normalized base username.
+     */
     private String resolveBaseUsername(String displayName, String email) {
         String baseUsername = normalizeUsername(displayName);
 
@@ -220,6 +339,13 @@ public class UserService {
         return baseUsername;
     }
 
+    /**
+     * Adds a random numeric suffix until a unique username is found.
+     *
+     * @param baseUsername the preferred base username.
+     * @return a unique randomized username.
+     * @throws IllegalStateException if a unique username cannot be generated.
+     */
     private String resolveRandomizedUsername(String baseUsername) {
         for (int attempt = 0; attempt < MAX_USERNAME_GENERATION_ATTEMPTS; attempt++) {
             String suffix = "-" + randomNumericSuffix();
@@ -233,10 +359,21 @@ public class UserService {
         throw new IllegalStateException("Unable to generate a unique username.");
     }
 
+    /**
+     * Generates a zero-padded numeric username suffix.
+     *
+     * @return the random numeric suffix.
+     */
     private String randomNumericSuffix() {
         return String.format(Locale.ROOT, "%0" + RANDOM_USERNAME_SUFFIX_DIGITS + "d", USERNAME_RANDOM.nextInt(RANDOM_USERNAME_SUFFIX_BOUND));
     }
 
+    /**
+     * Normalizes a raw username-like value into the allowed username format.
+     *
+     * @param value the raw value to normalize.
+     * @return the normalized username, or an empty string when the value is null.
+     */
     private String normalizeUsername(String value) {
         if (value == null) {
             return "";
@@ -249,6 +386,13 @@ public class UserService {
                 .replaceAll("^-|-$", "");
     }
 
+    /**
+     * Normalizes and validates a requested username.
+     *
+     * @param requestedUsername the raw requested username.
+     * @return the normalized username.
+     * @throws IllegalArgumentException if the username is blank or too long.
+     */
     private String validateRequestedUsername(String requestedUsername) {
         String username = normalizeUsername(requestedUsername);
 
@@ -263,6 +407,13 @@ public class UserService {
         return username;
     }
 
+    /**
+     * Truncates a string to the requested maximum length.
+     *
+     * @param value the value to truncate.
+     * @param maxLength the maximum allowed length.
+     * @return the original value or a truncated prefix.
+     */
     private String truncate(String value, int maxLength) {
         return value.length() <= maxLength ? value : value.substring(0, maxLength);
     }

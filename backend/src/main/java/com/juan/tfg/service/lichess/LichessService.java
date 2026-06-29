@@ -14,6 +14,13 @@ import java.net.http.HttpResponse;
 @Service
 public class LichessService {
 
+    /**
+     * Fetches the daily puzzle from the Lichess API.
+     *
+     * @return the daily puzzle response mapped to a puzzle entity.
+     * @throws IOException if the HTTP request or JSON parsing fails.
+     * @throws InterruptedException if the HTTP request is interrupted.
+     */
     public Puzzle getDailyPuzzle() throws IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://lichess.org/api/puzzle/daily"))

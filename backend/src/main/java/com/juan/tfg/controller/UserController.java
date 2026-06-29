@@ -28,17 +28,36 @@ public class UserController {
 
     private final UserService userService;
 
+    /**
+     * Returns users ordered by Elo rating for the leaderboard.
+     *
+     * @param firebaseUid the authenticated Firebase user identifier.
+     * @return the leaderboard entries.
+     */
     @GetMapping
     public ResponseEntity<List<UserLeaderboardEntryDTO>> getUsersOrderedByEloRating(@AuthenticationPrincipal String firebaseUid) {
         return ResponseEntity.ok(userService.getUsersOrderedByEloRating(firebaseUid));
     }
 
+    /**
+     * Returns the authenticated user's profile, creating it from Firebase data when needed.
+     *
+     * @param firebaseUid the authenticated Firebase user identifier.
+     * @return the current user's profile.
+     */
     @GetMapping("/me")
     public ResponseEntity<UserProfileDTO> getCurrentUser(@AuthenticationPrincipal String firebaseUid) {
         User user = userService.getOrCreateUser(firebaseUid);
         return ResponseEntity.ok(toProfileDTO(user));
     }
 
+    /**
+     * Updates the authenticated user's username.
+     *
+     * @param firebaseUid the authenticated Firebase user identifier.
+     * @param request the request containing the desired username.
+     * @return the updated user profile.
+     */
     @PatchMapping("/me/username")
     public ResponseEntity<UserProfileDTO> updateCurrentUsername(
             @AuthenticationPrincipal String firebaseUid,
@@ -54,6 +73,12 @@ public class UserController {
         }
     }
 
+    /**
+     * Converts a user entity into the profile response returned by the API.
+     *
+     * @param user the user entity to convert.
+     * @return the user profile DTO.
+     */
     private UserProfileDTO toProfileDTO(User user) {
         return new UserProfileDTO(
                 user.getFirebaseUid(),

@@ -22,6 +22,11 @@ public class FirebaseConfig {
     @Value("${firebase.config.path:chessaissistant-1ea8f-firebase-adminsdk-fbsvc-40f460c561.json}")
     private String firebaseConfigPath;
 
+    /**
+     * Creates or returns the singleton Firebase application used by the backend.
+     *
+     * @return the initialized Firebase application.
+     */
     @Bean
     public FirebaseApp firebaseApp() {
         if (!FirebaseApp.getApps().isEmpty()) {
@@ -44,6 +49,12 @@ public class FirebaseConfig {
         }
     }
 
+    /**
+     * Loads Firebase credentials from the configured service-account path.
+     *
+     * @return Google credentials for the Firebase Admin SDK.
+     * @throws IOException if the configured credentials file cannot be read.
+     */
     private GoogleCredentials loadCredentials() throws IOException {
         if (firebaseConfigPath == null || firebaseConfigPath.isBlank()) {
             return GoogleCredentials.getApplicationDefault();
@@ -56,6 +67,12 @@ public class FirebaseConfig {
         }
     }
 
+    /**
+     * Resolves the configured Firebase service-account file from the current directory or backend directory.
+     *
+     * @return the existing service-account file path.
+     * @throws IllegalStateException if the configured file cannot be found.
+     */
     private Path resolveServiceAccountPath() {
         Path configuredPath = Path.of(firebaseConfigPath.trim());
 

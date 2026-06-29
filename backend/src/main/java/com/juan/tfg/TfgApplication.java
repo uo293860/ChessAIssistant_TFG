@@ -3,13 +3,15 @@ package com.juan.tfg;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-
-import java.util.List;
 
 @SpringBootApplication
 public class TfgApplication {
 
+	/**
+	 * Starts the Spring Boot application.
+	 *
+	 * @param args command-line arguments passed to Spring Boot.
+	 */
 	public static void main(String[] args) {
 		SpringApplication.run(TfgApplication.class, args);
 	}

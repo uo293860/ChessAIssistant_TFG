@@ -3,11 +3,30 @@ package com.juan.tfg.service.aitutor;
 import java.util.List;
 
 public class AbstractAITutorService implements AITutorService {
+
+    /**
+     * Returns an empty hint array for implementations that do not provide AI hints.
+     *
+     * @param fen the puzzle position in FEN notation.
+     * @param solution the puzzle solution moves.
+     * @param themes the puzzle themes.
+     * @param initialMove the initial opponent move that starts the puzzle.
+     * @return an empty hint array.
+     */
     @Override
     public String[] getHints(String fen, List<String> solution, List<String> themes, String initialMove) {
         return new String[0];
     }
 
+    /**
+     * Builds the prompt sent to an AI tutor provider for hint generation.
+     *
+     * @param fen the puzzle position in FEN notation.
+     * @param solution the puzzle solution moves.
+     * @param themes the puzzle themes.
+     * @param initialMove the initial opponent move that starts the puzzle.
+     * @return the complete AI prompt.
+     */
     protected String getPrompt(String fen, List<String> solution, List<String> themes, String initialMove) {
         String colour = getColourToMove(fen);
         return "You are an expert chess coach and puzzle instructor. Carefully analyze the following chess position and provide exactly three hints to help solve the problem.\n" +
@@ -38,6 +57,12 @@ public class AbstractAITutorService implements AITutorService {
                 "You can use the themes of the problem as a guide: " + themes;
     }
 
+    /**
+     * Splits provider text into individual hint lines.
+     *
+     * @param puzzleHints the raw provider response.
+     * @return the parsed hint lines.
+     */
     protected String[] parseHints(String puzzleHints) {
         //String[] answer = puzzleHints.split("\\r?\\n");
         //String[] hints = new String[answer.length-1];
@@ -45,6 +70,13 @@ public class AbstractAITutorService implements AITutorService {
         return puzzleHints.split("\\r?\\n");
     }
 
+    /**
+     * Determines which color should solve the puzzle after the initial opponent move.
+     *
+     * @param fen the puzzle position in FEN notation.
+     * @return the color name expected to move in the puzzle.
+     * @throws IllegalArgumentException if the FEN is blank or does not contain a valid side-to-move field.
+     */
     private String getColourToMove(String fen) {
         if (fen == null || fen.isBlank()) {
             throw new IllegalArgumentException("FEN position must not be blank.");

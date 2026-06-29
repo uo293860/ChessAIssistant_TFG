@@ -9,6 +9,16 @@ public class EloService {
     private static final double PENALTY_PER_HINT = 0.25;
     private static final double PENALTY_PER_ERROR = 0.33;
 
+    /**
+     * Calculates the player's new Elo after a puzzle attempt.
+     *
+     * @param playerElo the player's current Elo.
+     * @param puzzleElo the puzzle rating used as the opponent rating.
+     * @param solved whether the puzzle was solved.
+     * @param hintsUsed the number of hints used during the attempt.
+     * @param failedAttempts the number of incorrect moves submitted during the attempt.
+     * @return the rounded new Elo value.
+     */
     public int calculateNewPlayerElo(int playerElo, int puzzleElo, boolean solved, int hintsUsed, int failedAttempts) {
         int normalizedHints = Math.max(0, hintsUsed);
         int normalizedFailedAttempts = Math.max(0, failedAttempts);
