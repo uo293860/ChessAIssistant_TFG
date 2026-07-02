@@ -154,6 +154,7 @@ export function GameStatePanel({
     failedAttempts,
   })
   const surrenderedSolution = surrenderedSolutionMoves.join(' ')
+  const puzzleTrainingUrl = puzzle ? `https://lichess.org/training/${encodeURIComponent(puzzle.id)}` : null
 
   return (
     <div className="board-panel">
@@ -167,6 +168,11 @@ export function GameStatePanel({
         <div className="solution-summary" aria-label="Puzzle solution">
           <span>Solution</span>
           <strong>{surrenderedSolution || 'No solution moves were returned.'}</strong>
+          {puzzleTrainingUrl ? (
+            <a href={puzzleTrainingUrl} target="_blank" rel="noreferrer">
+              Open puzzle on Lichess
+            </a>
+          ) : null}
         </div>
       ) : null}
       {puzzleActionError ? <p className="feedback error">{puzzleActionError}</p> : null}

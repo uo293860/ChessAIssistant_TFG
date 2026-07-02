@@ -264,6 +264,7 @@ export function usePuzzleTrainer() {
         puzzleId: puzzle.id,
       })
       setSurrenderedSolutionMoves(surrender.solutionMoves.map((move) => move.trim()).filter(Boolean))
+      setGame(getPositionAfterInitialMove(puzzle))
       applyPuzzleResult(surrender.puzzleCompleted, surrender.newElo, surrender.eloChange, true)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to surrender the puzzle.'

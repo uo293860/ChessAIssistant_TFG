@@ -886,6 +886,15 @@
   overflow-wrap: anywhere;
 }
 
+.solution-summary a {
+  color: #111111;
+  font-size: 0.9rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
 .completion-elo-item {
   display: grid;
   gap: 4px;
